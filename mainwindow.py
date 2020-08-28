@@ -26,7 +26,7 @@ class MainWindow():
         mainWindow.configure(background='black')
 
         self.menubar = tkinter.Menu(mainWindow)
-        self.image_frame = tkinter.Frame(mainWindow, background='blue')
+        self.image_frame = tkinter.Frame(mainWindow, background='black')
         self.image_frame.pack(fill='both', expand=True)
 
         self.file_menu = tkinter.Menu(self.menubar, tearoff=0)
@@ -110,6 +110,9 @@ class MainWindow():
         self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
         # print("PIL.ImageTk.PhotoImage type: {}".format(type(image)))
         self.refresh_image()
+        # enable menu items once an image is loaded
+        self.menubar.entryconfig("View", state='normal')
+        self.menubar.entryconfig("Image", state='normal')
 
     def refresh_image(self):
         # create container for loading image
