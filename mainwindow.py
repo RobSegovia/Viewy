@@ -104,6 +104,9 @@ class MainWindow():
         self.window_menu.add_command(label="Minimize")
         self.window_menu.add_command(label="Maximize")
         self.window_menu.add_separator()
+        self.window_menu.add_command(label="Stretch to Screen Width")
+        self.window_menu.add_command(label="Stretch to Screen Height")
+        self.window_menu.add_separator()
         self.window_menu.add_command(
             label="Fit to Height of Image", command=self.fit_height)
         self.window_menu.add_command(
