@@ -3,6 +3,7 @@ import tkinter.filedialog
 import PIL.Image
 import PIL.ImageTk
 import cv2
+# TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
 class MainWindow():
@@ -22,6 +23,8 @@ class MainWindow():
 
     image_width = 0
     image_height = 0
+
+    SBW = 21  # scrollbar width
 
     image_scrollbar = None
 
@@ -55,6 +58,7 @@ class MainWindow():
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
             scrollregion=(0, 0, self.image_width, self.image_height))
+        print(self.canvas.winfo_width(), self.canvas.winfo_height())
 
         self.file_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.view_menu = tkinter.Menu(self.menubar, tearoff=0)
@@ -100,8 +104,12 @@ class MainWindow():
         self.window_menu.add_command(label="Minimize")
         self.window_menu.add_command(label="Maximize")
         self.window_menu.add_separator()
-        self.window_menu.add_command(label="Stretch to Height")
-        self.window_menu.add_command(label="Stretch to Width")
+        self.window_menu.add_command(
+            label="Fit to Height of Image", command=self.fit_height)
+        self.window_menu.add_command(
+            label="Fit to Width of Image", command=self.fit_width)
+        self.window_menu.add_command(
+            label="Fit to Size of Image", command=self.fit_size)
         self.window_menu.add_separator()
         self.window_menu.add_command(label="Show Sidebar")
         self.window_menu.add_command(label="Hide Sidebar")
@@ -122,43 +130,39 @@ class MainWindow():
         mainWindow.config(menu=self.menubar)
 
     def load_image(self):
-        filename = tkinter.filedialog.askopenfilename(
-            initialdir="/", title="Select an Image")
-        # load image into CV2 array
-        self.cv2_image = cv2.imread(filename)
+        print(mainWindow.geometry())  # TODO del this
+        try:
+            filename = tkinter.filedialog.askopenfilename(
+                initialdir="/", title="Select an Image")
+            # load image into CV2 array
+            self.cv2_image = cv2.imread(filename)
+            # convert to PIL colour order
+            self.cv2_image = cv2.cvtColor(self.cv2_image, cv2.COLOR_BGR2RGB)
+            # convert array to PIL format
+            self.pil_image = PIL.Image.fromarray(self.cv2_image)
+            # convert to tkinter format
+            self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+            self.image_dimensions(self.tk_image)
 
-        # print("cv2.imread type: {}".format(type(image)))
-        # convert to PIL colour order
-        self.cv2_image = cv2.cvtColor(self.cv2_image, cv2.COLOR_BGR2RGB)
-        # print("cv2.cvtColor type: {}".format(type(image)))
-        # convert array to PIL format
-        self.pil_image = PIL.Image.fromarray(self.cv2_image)
-        # print("PIL.Image.fromarray type: {}".format(type(image)))
-        # convert to tkinter format
-        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
-        self.image_dimensions(self.tk_image)
-
-        # print("PIL.ImageTk.PhotoImage type: {}".format(type(image)))
-        self.refresh_image()
-        # enable menu items once an image is loaded
-        self.menubar.entryconfig("View", state='normal')
-        self.menubar.entryconfig("Image", state='normal')
+            self.refresh_image()
+            # enable menu items once an image is loaded
+            self.menubar.entryconfig("View", state='normal')
+            self.menubar.entryconfig("Image", state='normal')
+        except:
+            print("--> No image loaded")
 
     def refresh_image(self):
-
         # delete any previous image before refreshing
         self.canvas.delete("image")
 
-        # Create container for loading image
-        # TODO move image to center
+        # load image into canvas
         self.canvas.create_image(
             0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
-
         self.image_dimensions(self.tk_image)
         self.canvas.config(
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
-            scrollregion=(0, 0, self.image_width, self.image_height))  # set this to size of image
+            scrollregion=(0, 0, self.image_width, self.image_height))
 
         # store a reference to the image so it won't be deleted
         # by the garbage collector
@@ -169,23 +173,49 @@ class MainWindow():
         self.tk_image = self.pil_image.resize((200, 200), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
         self.tk_image = PIL.ImageTk.PhotoImage(self.tk_image)
-        # destroy the image_label container for the image before refreshing
-        # [child_frame.destroy()
-        #  for child_frame in self.image_frame.winfo_children()]
-        # print([child_frame for child_frame in self.image_frame.winfo_children()])
+        # destroy the image before refreshing
         self.canvas.delete("image")
         self.refresh_image()
-
-    # def enable_menu(self):
-    #     pass
-
-    # # TODO fix this
-    # def disable_menu(self, menu, index):
-    #     menu.entryconfig(index, state="disabled")
 
     def image_dimensions(self, image):
         self.image_width = image.width()
         self.image_height = image.height()
+
+    def fit_height(self):
+        screen_width, screen_height = mainWindow.winfo_screenwidth(
+        ), mainWindow.winfo_screenheight()
+        if (self.image_height < screen_height):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.image_height + self.SBW, 1921, 0))
+        else:
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(mainWindow.winfo_width(), screen_height, 1921, 0))
+
+    def fit_width(self):
+        screen_width, screen_height = mainWindow.winfo_screenwidth(
+        ), mainWindow.winfo_screenheight()
+        if (self.image_width < screen_width):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), 1921, 0))
+        else:
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(screen_width, mainWindow.winfo_height(), 1921, 0))
+
+    def fit_size(self):
+        screen_width, screen_height = mainWindow.winfo_screenwidth(
+        ), mainWindow.winfo_screenheight()
+        if (self.image_width < screen_width) and (self.image_height < screen_height):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, self.image_height + self.SBW, 1921, 0))
+        elif (self.image_width < screen_width) and (self.image_height >= screen_height):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, screen_height, 1921, 0))
+        elif (self.image_height < screen_height) and (self.image_width >= screen_width):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(screen_width, self.image_height + self.SBW, 1921, 0))
+        else:
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(screen_width, screen_height, 1921, 0))
 
     def open_dir(self):
         pass
