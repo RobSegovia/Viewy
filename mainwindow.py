@@ -20,6 +20,9 @@ class MainWindow():
     pil_image = None
     tk_image = None
 
+    image_width = 0
+    image_height = 0
+
     image_scrollbar = None
 
     def __init__(self, mainWindow):
@@ -48,6 +51,10 @@ class MainWindow():
         self.horz_scrollbar.config(command=self.canvas.xview)
 
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
+        self.canvas.config(
+            yscrollcommand=self.vert_scrollbar.set,
+            xscrollcommand=self.horz_scrollbar.set,
+            scrollregion=(0, 0, self.image_width, self.image_height))
 
         self.file_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.view_menu = tkinter.Menu(self.menubar, tearoff=0)
@@ -119,6 +126,7 @@ class MainWindow():
             initialdir="/", title="Select an Image")
         # load image into CV2 array
         self.cv2_image = cv2.imread(filename)
+
         # print("cv2.imread type: {}".format(type(image)))
         # convert to PIL colour order
         self.cv2_image = cv2.cvtColor(self.cv2_image, cv2.COLOR_BGR2RGB)
@@ -128,6 +136,8 @@ class MainWindow():
         # print("PIL.Image.fromarray type: {}".format(type(image)))
         # convert to tkinter format
         self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.image_dimensions(self.tk_image)
+
         # print("PIL.ImageTk.PhotoImage type: {}".format(type(image)))
         self.refresh_image()
         # enable menu items once an image is loaded
@@ -144,11 +154,11 @@ class MainWindow():
         self.canvas.create_image(
             0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
 
-        # TODO set scrollregion to size of current image
+        self.image_dimensions(self.tk_image)
         self.canvas.config(
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
-            scrollregion=(0, 0, 500, 500))  # set this to size of image
+            scrollregion=(0, 0, self.image_width, self.image_height))  # set this to size of image
 
         # store a reference to the image so it won't be deleted
         # by the garbage collector
@@ -172,6 +182,10 @@ class MainWindow():
     # # TODO fix this
     # def disable_menu(self, menu, index):
     #     menu.entryconfig(index, state="disabled")
+
+    def image_dimensions(self, image):
+        self.image_width = image.width()
+        self.image_height = image.height()
 
     def open_dir(self):
         pass
