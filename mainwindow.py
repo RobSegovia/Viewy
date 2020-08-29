@@ -20,14 +20,34 @@ class MainWindow():
     pil_image = None
     tk_image = None
 
+    image_scrollbar = None
+
     def __init__(self, mainWindow):
         mainWindow.title("Viewy")
         mainWindow.geometry("640x480+2500+100")
         mainWindow.configure(background='black')
 
+        # Create Menu, Image backing frame, and Canvas
         self.menubar = tkinter.Menu(mainWindow)
-        self.image_frame = tkinter.Frame(mainWindow, background='black')
-        self.image_frame.pack(fill='both', expand=True)
+        self.image_frame = tkinter.Frame(
+            mainWindow, background='blue')
+        self.image_frame.pack(fill=tkinter.BOTH, expand=True)
+        self.canvas = tkinter.Canvas(
+            self.image_frame, bg='red')
+
+        # Create Scrollbars
+        self.vert_scrollbar = tkinter.Scrollbar(
+            self.image_frame)
+        self.vert_scrollbar.config(command=self.canvas.yview)
+        self.vert_scrollbar.pack(
+            side=tkinter.RIGHT, fill='y')
+
+        self.horz_scrollbar = tkinter.Scrollbar(
+            self.image_frame, orient=tkinter.HORIZONTAL)
+        self.horz_scrollbar.pack(side=tkinter.BOTTOM, fill='x')
+        self.horz_scrollbar.config(command=self.canvas.xview)
+
+        self.canvas.pack(fill=tkinter.BOTH, expand=True)
 
         self.file_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.view_menu = tkinter.Menu(self.menubar, tearoff=0)
@@ -115,9 +135,21 @@ class MainWindow():
         self.menubar.entryconfig("Image", state='normal')
 
     def refresh_image(self):
-        # create container for loading image
-        self.image_label = tkinter.Label(
-            self.image_frame, image=self.tk_image).grid(row=0, column=0)
+
+        # delete any previous image before refreshing
+        self.canvas.delete("image")
+
+        # Create container for loading image
+        # TODO move image to center
+        self.canvas.create_image(
+            0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
+
+        # TODO set scrollregion to size of current image
+        self.canvas.config(
+            yscrollcommand=self.vert_scrollbar.set,
+            xscrollcommand=self.horz_scrollbar.set,
+            scrollregion=(0, 0, 500, 500))  # set this to size of image
+
         # store a reference to the image so it won't be deleted
         # by the garbage collector
         self.tk_image.image = self.tk_image
@@ -128,17 +160,18 @@ class MainWindow():
         # convert to PhotoImage format again
         self.tk_image = PIL.ImageTk.PhotoImage(self.tk_image)
         # destroy the image_label container for the image before refreshing
-        [child_frame.destroy()
-         for child_frame in self.image_frame.winfo_children()]
-        print([child_frame for child_frame in self.image_frame.winfo_children()])
+        # [child_frame.destroy()
+        #  for child_frame in self.image_frame.winfo_children()]
+        # print([child_frame for child_frame in self.image_frame.winfo_children()])
+        self.canvas.delete("image")
         self.refresh_image()
 
-    def enable_menu(self):
-        pass
+    # def enable_menu(self):
+    #     pass
 
-    # TODO fix this
-    def disable_menu(self, menu, index):
-        menu.entryconfig(index, state="disabled")
+    # # TODO fix this
+    # def disable_menu(self, menu, index):
+    #     menu.entryconfig(index, state="disabled")
 
     def open_dir(self):
         pass
