@@ -6,7 +6,7 @@ import cv2
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
-class MainWindow():
+class MainWindow:
 
     menubar = None
     file_menu = None
@@ -21,6 +21,12 @@ class MainWindow():
     pil_image = None
     tk_image = None
 
+    screen_width = 0
+    screen_height = 0
+    win_width = 640
+    win_height = 480
+    win_x_offset = 2500
+    win_y_offset = 100
     image_width = 0
     image_height = 0
 
@@ -29,9 +35,17 @@ class MainWindow():
     image_scrollbar = None
 
     def __init__(self, mainWindow):
+        self.screen_width = mainWindow.winfo_screenwidth()
+        self.screen_height = mainWindow.winfo_screenheight()
+
         mainWindow.title("Viewy")
-        mainWindow.geometry("640x480+2500+100")
+        mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
+                                                 self.win_height,
+                                                 self.win_x_offset,
+                                                 self.win_y_offset))
         mainWindow.configure(background='black')
+
+        self.win_location()  # TODO del
 
         # Create Menu, Image backing frame, and Canvas
         self.menubar = tkinter.Menu(mainWindow)
@@ -45,8 +59,8 @@ class MainWindow():
         self.vert_scrollbar = tkinter.Scrollbar(
             self.image_frame)
         self.vert_scrollbar.config(command=self.canvas.yview)
-        self.vert_scrollbar.pack(
-            side=tkinter.RIGHT, fill='y')
+        self.vert_scrollbar.pack(side=tkinter.RIGHT,
+                                 fill='y')
 
         self.horz_scrollbar = tkinter.Scrollbar(
             self.image_frame, orient=tkinter.HORIZONTAL)
@@ -153,6 +167,7 @@ class MainWindow():
         # print(mainWindow.wm_state()) # TODO del
 
     def load_image(self):
+        self.win_location()
         try:
             filename = tkinter.filedialog.askopenfilename(
                 initialdir="/", title="Select an Image")
@@ -178,6 +193,8 @@ class MainWindow():
             self.window_menu.entryconfig(6, state='normal')
             self.window_menu.entryconfig(8, state='normal')
             self.window_menu.entryconfig(9, state='normal')
+
+            self.win_location()
 
         except:
             # raise
@@ -274,33 +291,50 @@ class MainWindow():
         mainWindow.wm_state('zoomed')
 
     def win_fit_width(self):
-        screen_width, screen_height = mainWindow.winfo_screenwidth(),
-        mainWindow.winfo_screenheight()
-        if (self.image_width < screen_width):
+        # print("Fit width Start v")
+        # self.win_location()
+        if (self.image_width < self.screen_width):
+            # print("if")
+            # self.win_location()
             mainWindow.geometry(
-                "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), 1921, 0))
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
+        else:
+            # print("else")
+            # self.win_location()
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.screen_width, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
+        print("Fit width End v")
+        # self.win_location()
+
+    def win_fit_height(self):
+        # self.win_location()
+        if self.image_height < self.screen_height:
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.image_height + self.SBW, self.win_x_offset, self.win_y_offset))
         else:
             mainWindow.geometry(
-                "{}x{}+{}+{}".format(screen_width, mainWindow.winfo_height(), 1921, 0))
+                "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
 
     def win_fit_size(self):
+        # self.win_location()
+
         # restore window before applying changes
         if mainWindow.wm_state() == 'zoomed':
             mainWindow.state('normal')
 
-        screen_width, screen_height = mainWindow.winfo_screenwidth(),
-        mainWindow.winfo_screenheight()
-        if (self.image_width < screen_width) and (self.image_height < screen_height):
+        if (self.image_width < self.screen_width) and (self.image_height < self.screen_height):
             mainWindow.geometry(
-                "{}x{}+{}+{}".format(self.image_width + self.SBW, self.image_height + self.SBW, 1921, 0))
-        elif (self.image_width < screen_width) and (self.image_height >= screen_height):
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, self.image_height + self.SBW,  self.win_x_offset, self.win_y_offset))
+        elif (self.image_width < self.screen_width) and (self.image_height >= self.screen_height):
             mainWindow.geometry(
-                "{}x{}+{}+{}".format(self.image_width + self.SBW, screen_height, 1921, 0))
-        elif (self.image_height < screen_height) and (self.image_width >= screen_width):
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, self.screen_height,  self.win_x_offset, self.win_y_offset))
+        elif (self.image_height < self.screen_height) and (self.image_width >= self.screen_width):
             mainWindow.geometry(
-                "{}x{}+{}+{}".format(screen_width, self.image_height + self.SBW, 1921, 0))
+                "{}x{}+{}+{}".format(self.screen_width, self.image_height + self.SBW,  self.win_x_offset, self.win_y_offset))
         else:
             mainWindow.state('zoomed')  # maximize window
+
+        # self.win_location()
 
     def show_sidebar(self):
         pass
@@ -330,21 +364,19 @@ class MainWindow():
         self.image_width = image.width()
         self.image_height = image.height()
 
-    def win_fit_height(self):
-        screen_width, screen_height = mainWindow.winfo_screenwidth(),
-        mainWindow.winfo_screenheight()
-        if (self.image_height < screen_height):
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.image_height + self.SBW, 1921, 0))
-        else:
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(mainWindow.winfo_width(), screen_height, 1921, 0))
-
     def help(self):
         pass
 
     def about(self):
         pass
+
+    def win_location(self):
+        self.screen_width, self.screen_height = mainWindow.winfo_screenwidth(
+        ), mainWindow.winfo_screenheight()
+        self.win_x_offset, self.win_y_offset = mainWindow.winfo_rootx() - \
+            8, mainWindow.winfo_rooty()-51
+        # print("Screen w h :", self.screen_width, self.screen_height)
+        # print("Window x y offsets: ", self.win_x_offset, self.win_y_offset)
 
 
 if __name__ == "__main__":
