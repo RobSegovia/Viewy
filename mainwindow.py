@@ -29,6 +29,7 @@ class MainWindow:
     win_y_offset = 100
     image_width = 0
     image_height = 0
+    # aspect_locked = False
 
     SBW = 21  # scrollbar width
 
@@ -37,6 +38,8 @@ class MainWindow:
     def __init__(self, mainWindow):
         self.screen_width = mainWindow.winfo_screenwidth()
         self.screen_height = mainWindow.winfo_screenheight()
+        # for lock aspect ratio check button
+        self.aspect_locked = tkinter.IntVar()
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
@@ -137,6 +140,9 @@ class MainWindow:
             label="Restore", command=self.restore_window)
         self.window_menu.add_command(label="Maximize", command=self.max_window)
         self.window_menu.add_separator()
+        self.window_menu.add_checkbutton(
+            label="Lock Aspect Ratio", variable=self.aspect_locked, command=self.lock_aspect)
+        self.window_menu.add_separator()
         self.window_menu.add_command(
             label="Fit to Height of Image", command=self.win_fit_height, state='disabled')
         self.window_menu.add_command(
@@ -165,6 +171,7 @@ class MainWindow:
 
         mainWindow.config(menu=self.menubar)
         # print(mainWindow.wm_state()) # TODO del
+        print(self.aspect_locked.get())
 
     def load_image(self):
         self.win_location()
@@ -188,11 +195,9 @@ class MainWindow:
             self.file_menu.entryconfig(3, state='normal')
             self.menubar.entryconfig("View", state='normal')
             self.menubar.entryconfig("Image", state='normal')
-            self.window_menu.entryconfig(4, state=tkinter.NORMAL)
-            self.window_menu.entryconfig(5, state='normal')
-            self.window_menu.entryconfig(6, state='normal')
-            self.window_menu.entryconfig(8, state='normal')
-            self.window_menu.entryconfig(9, state='normal')
+            self.lock_aspect()
+            self.window_menu.entryconfig(10, state='normal')
+            self.window_menu.entryconfig(11, state='normal')
 
             self.win_location()
 
@@ -290,21 +295,34 @@ class MainWindow:
     def max_window():
         mainWindow.wm_state('zoomed')
 
+    def lock_aspect(self):
+        if not [item for item in self.canvas.find_all()]:
+            # if self.aspect_locked.get() == 1:
+            self.window_menu.entryconfig(6, state='disabled')
+            self.window_menu.entryconfig(7, state='disabled')
+            self.window_menu.entryconfig(8, state='disabled')
+        else:
+            if self.aspect_locked.get() == 1:
+                self.window_menu.entryconfig(1, state='disabled')
+                self.window_menu.entryconfig(2, state='disabled')
+                self.window_menu.entryconfig(6, state='disabled')
+                self.window_menu.entryconfig(7, state='disabled')
+                self.window_menu.entryconfig(8, state='disabled')
+            else:
+                self.window_menu.entryconfig(1, state='normal')
+                self.window_menu.entryconfig(2, state='normal')
+                self.window_menu.entryconfig(6, state='normal')
+                self.window_menu.entryconfig(7, state='normal')
+                self.window_menu.entryconfig(8, state='normal')
+
     def win_fit_width(self):
-        # print("Fit width Start v")
-        # self.win_location()
         if (self.image_width < self.screen_width):
-            # print("if")
-            # self.win_location()
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
         else:
-            # print("else")
-            # self.win_location()
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(self.screen_width, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
         print("Fit width End v")
-        # self.win_location()
 
     def win_fit_height(self):
         # self.win_location()
