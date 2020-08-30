@@ -68,40 +68,55 @@ class MainWindow():
 
         self.file_menu.add_command(
             label="Load Image(s)", command=self.load_image)
-        self.file_menu.add_command(label="Load Directory")
-        self.file_menu.add_command(label="New Session")
-        self.file_menu.add_command(label="Save Session")
+        self.file_menu.add_command(
+            label="Load Directory", command=self.load_dir)
+        self.file_menu.add_command(
+            label="New Session", command=self.new_session)
+        self.file_menu.add_command(
+            label="Save Session", command=self.save_session)
         # disable this option
         self.file_menu.entryconfig("Save Session", state="disabled")
-        self.file_menu.add_command(label="Load Session")
+        self.file_menu.add_command(
+            label="Load Session", command=self.load_session)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=mainWindow.quit)
 
-        self.view_menu.add_command(label="Zoom In")
-        self.view_menu.add_command(label="Zoom Out")
-        self.view_menu.add_command(label="Zoom to Screen Width")
-        self.view_menu.add_command(label="Zoom to Screen Height")
-        self.view_menu.add_command(label="Reset Zoom")
+        self.view_menu.add_command(label="Zoom In", command=self.zoom_in)
+        self.view_menu.add_command(label="Zoom Out", command=self.zoom_out)
+        self.view_menu.add_command(
+            label="Zoom to Screen Width", command=self.zoom_to_width)
+        self.view_menu.add_command(
+            label="Zoom to Screen Height", command=self.zoom_to_height)
+        self.view_menu.add_command(label="Reset Zoom", command=self.zoom_reset)
         self.view_menu.add_separator()
-        self.view_menu.add_command(label="Flip Vertical")
-        self.view_menu.add_command(label="Flip Horizontal")
-        self.view_menu.add_command(label="Rotate Left")
-        self.view_menu.add_command(label="Rotate Right")
-        self.view_menu.add_command(label="Rotate Amount")
+        self.view_menu.add_command(
+            label="Flip Vertical", command=self.flip_vert)
+        self.view_menu.add_command(
+            label="Flip Horizontal", command=self.flip_horz)
+        self.view_menu.add_command(
+            label="Rotate Left", command=self.rotate_left)
+        self.view_menu.add_command(
+            label="Rotate Right", command=self.rotate_right)
+        self.view_menu.add_command(
+            label="Rotate Amount", command=self.rotate_amount)
 
-        self.image_menu.add_command(label="Undo")
-        self.image_menu.add_command(label="Redo")
-        self.image_menu.add_command(label="Skip Image")
-        self.image_menu.add_command(label="Go Back")
-        self.image_menu.add_command(label="Search Image on Google")
+        self.image_menu.add_command(label="Undo", command=self.undo)
+        self.image_menu.add_command(label="Redo", command=self.redo)
+        self.image_menu.add_command(
+            label="Skip Image", command=self.skip_image)
+        self.image_menu.add_command(label="Go Back", command=self.go_back)
+        self.image_menu.add_command(
+            label="Search Image on Google", command=self.search_google)
         self.image_menu.add_separator()
         self.image_menu.add_command(
             label="Resize Image", command=self.resize_image)
         self.image_menu.add_command(label="Vignette Border")
-        self.image_menu.add_command(label="Brighten")
-        self.image_menu.add_command(label="Levels - Darken")
-        self.image_menu.add_command(label="Median")
-        self.image_menu.add_command(label="Upscale Image")
+        self.image_menu.add_command(label="Brighten", command=self.brighten)
+        self.image_menu.add_command(
+            label="Levels - Darken", command=self.levels_darken)
+        self.image_menu.add_command(label="Median", command=self.median)
+        self.image_menu.add_command(
+            label="Upscale Image", command=self.upscale)
 
         self.window_menu.add_command(label="Minimize", command=self.min_window)
         self.window_menu.add_command(
@@ -109,18 +124,20 @@ class MainWindow():
         self.window_menu.add_command(label="Maximize", command=self.max_window)
         self.window_menu.add_separator()
         self.window_menu.add_command(
-            label="Fit to Height of Image", command=self.fit_height, state='disabled')
+            label="Fit to Height of Image", command=self.win_fit_height, state='disabled')
         self.window_menu.add_command(
-            label="Fit to Width of Image", command=self.fit_width, state='disabled')
+            label="Fit to Width of Image", command=self.win_fit_width, state='disabled')
         self.window_menu.add_command(
-            label="Fit to Size of Image", command=self.fit_size, state='disabled')
+            label="Fit to Size of Image", command=self.win_fit_size, state='disabled')
         self.window_menu.add_separator()
-        self.window_menu.add_command(label="Show Sidebar", state='disabled')
-        self.window_menu.add_command(label="Hide Sidebar", state='disabled')
+        self.window_menu.add_command(
+            label="Show Sidebar", state='disabled', command=self.show_sidebar)
+        self.window_menu.add_command(
+            label="Hide Sidebar", state='disabled', command=self.hide_sidebar)
 
-        self.help_menu.add_command(label="Help")
+        self.help_menu.add_command(label="Help", command=self.help)
         self.help_menu.add_separator()
-        self.help_menu.add_command(label="About")
+        self.help_menu.add_command(label="About", command=self.about)
 
         # add menubar labels
         self.menubar.add_cascade(label="File", menu=self.file_menu)
@@ -135,20 +152,7 @@ class MainWindow():
         mainWindow.config(menu=self.menubar)
         # print(mainWindow.wm_state()) # TODO del
 
-    @staticmethod
-    def min_window():
-        mainWindow.wm_state('icon')
-
-    @staticmethod
-    def restore_window():
-        mainWindow.wm_state('normal')
-
-    @staticmethod
-    def max_window():
-        mainWindow.wm_state('zoomed')
-
     def load_image(self):
-        print(mainWindow.geometry())  # TODO del this
         try:
             filename = tkinter.filedialog.askopenfilename(
                 initialdir="/", title="Select an Image")
@@ -165,7 +169,7 @@ class MainWindow():
             self.refresh_image()
 
             # enable menu items once an image is loaded
-            print(self.file_menu.entrycget(3, 'state'))
+            # NOTE: add_separator does not have a state!
             self.file_menu.entryconfig(3, state='normal')
             self.menubar.entryconfig("View", state='normal')
             self.menubar.entryconfig("Image", state='normal')
@@ -176,8 +180,133 @@ class MainWindow():
             self.window_menu.entryconfig(9, state='normal')
 
         except:
-            raise
+            # raise
             print("--> No image loaded")
+
+    def load_dir(self):
+        pass
+
+    def new_session(self):
+        pass
+
+    def save_session(self):
+        pass
+
+    def load_session(self):
+        pass
+
+    def zoom_in(self):
+        pass
+
+    def zoom_out(self):
+        pass
+
+    def zoom_to_width(self):
+        pass
+
+    def zoom_to_height(self):
+        pass
+
+    def zoom_reset(self):
+        pass
+
+    def flip_vert(self):
+        pass
+
+    def flip_horz(self):
+        pass
+
+    def rotate_left(self):
+        pass
+
+    def rotate_right(self):
+        pass
+
+    def rotate_amount(self):
+        pass
+
+    def undo(self):
+        pass
+
+    def redo(self):
+        pass
+
+    def skip_image(self):
+        pass
+
+    def go_back(self):
+        pass
+
+    def search_google(self):
+        pass
+
+    def resize_image(self):
+        # use earlier pil_image to resize then reconvert and display
+        self.tk_image = self.pil_image.resize((200, 200), PIL.Image.ANTIALIAS)
+        # convert to PhotoImage format again
+        self.tk_image = PIL.ImageTk.PhotoImage(self.tk_image)
+        # destroy the image before refreshing
+        self.canvas.delete("image")
+        self.refresh_image()
+
+    def brighten(self):
+        pass
+
+    def levels_darken(self):
+        pass
+
+    def median(self):
+        pass
+
+    def upscale(self):
+        pass
+
+    @staticmethod
+    def min_window():
+        mainWindow.wm_state('icon')
+
+    @staticmethod
+    def restore_window():
+        mainWindow.wm_state('normal')
+
+    @staticmethod
+    def max_window():
+        mainWindow.wm_state('zoomed')
+
+    def win_fit_width(self):
+        screen_width, screen_height = mainWindow.winfo_screenwidth(),
+        mainWindow.winfo_screenheight()
+        if (self.image_width < screen_width):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), 1921, 0))
+        else:
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(screen_width, mainWindow.winfo_height(), 1921, 0))
+
+    def win_fit_size(self):
+        # restore window before applying changes
+        if mainWindow.wm_state() == 'zoomed':
+            mainWindow.state('normal')
+
+        screen_width, screen_height = mainWindow.winfo_screenwidth(),
+        mainWindow.winfo_screenheight()
+        if (self.image_width < screen_width) and (self.image_height < screen_height):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, self.image_height + self.SBW, 1921, 0))
+        elif (self.image_width < screen_width) and (self.image_height >= screen_height):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(self.image_width + self.SBW, screen_height, 1921, 0))
+        elif (self.image_height < screen_height) and (self.image_width >= screen_width):
+            mainWindow.geometry(
+                "{}x{}+{}+{}".format(screen_width, self.image_height + self.SBW, 1921, 0))
+        else:
+            mainWindow.state('zoomed')  # maximize window
+
+    def show_sidebar(self):
+        pass
+
+    def hide_sidebar(self):
+        pass
 
     def refresh_image(self):
         # delete any previous image before refreshing
@@ -197,22 +326,13 @@ class MainWindow():
         self.tk_image.image = self.tk_image
         # print(mainWindow.wm_state()) # TODO del
 
-    def resize_image(self):
-        # use earlier pil_image to resize then reconvert and display
-        self.tk_image = self.pil_image.resize((200, 200), PIL.Image.ANTIALIAS)
-        # convert to PhotoImage format again
-        self.tk_image = PIL.ImageTk.PhotoImage(self.tk_image)
-        # destroy the image before refreshing
-        self.canvas.delete("image")
-        self.refresh_image()
-
     def image_dimensions(self, image):
         self.image_width = image.width()
         self.image_height = image.height()
 
-    def fit_height(self):
-        screen_width, screen_height = mainWindow.winfo_screenwidth(
-        ), mainWindow.winfo_screenheight()
+    def win_fit_height(self):
+        screen_width, screen_height = mainWindow.winfo_screenwidth(),
+        mainWindow.winfo_screenheight()
         if (self.image_height < screen_height):
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.image_height + self.SBW, 1921, 0))
@@ -220,48 +340,17 @@ class MainWindow():
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), screen_height, 1921, 0))
 
-    def fit_width(self):
-        screen_width, screen_height = mainWindow.winfo_screenwidth(
-        ), mainWindow.winfo_screenheight()
-        if (self.image_width < screen_width):
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), 1921, 0))
-        else:
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(screen_width, mainWindow.winfo_height(), 1921, 0))
+    def help(self):
+        pass
 
-    def fit_size(self):
-        # restore window before applying changes
-        if mainWindow.wm_state() == 'zoomed':
-            mainWindow.state('normal')
-
-        screen_width, screen_height = mainWindow.winfo_screenwidth(
-        ), mainWindow.winfo_screenheight()
-        if (self.image_width < screen_width) and (self.image_height < screen_height):
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(self.image_width + self.SBW, self.image_height + self.SBW, 1921, 0))
-        elif (self.image_width < screen_width) and (self.image_height >= screen_height):
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(self.image_width + self.SBW, screen_height, 1921, 0))
-        elif (self.image_height < screen_height) and (self.image_width >= screen_width):
-            mainWindow.geometry(
-                "{}x{}+{}+{}".format(screen_width, self.image_height + self.SBW, 1921, 0))
-        else:
-            mainWindow.state('zoomed')  # maximize window
-            # mainWindow.geometry(
-            #     "{}x{}+{}+{}".format(screen_width, screen_height, 1921, 0))
-
-    def open_dir(self):
+    def about(self):
         pass
 
 
 if __name__ == "__main__":
-
     # initial declarations
     mainWindow = tkinter.Tk()
-
     # create instance of MainWindow class, call it 'app'
     app = MainWindow(mainWindow)
-
     # load program window
     mainWindow.mainloop()
