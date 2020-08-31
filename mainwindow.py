@@ -15,6 +15,9 @@ class MainWindow:
     window_menu = None
     help_menu = None
 
+    menubar_sel = None
+    submenu_sel = None
+
     image_frame = None
     image_label = None
     cv2_image = None
@@ -29,7 +32,6 @@ class MainWindow:
     win_y_offset = 100
     image_width = 0
     image_height = 0
-    # aspect_locked = False
 
     SBW = 21  # scrollbar width
 
@@ -40,6 +42,8 @@ class MainWindow:
         self.screen_height = mainWindow.winfo_screenheight()
         # for lock aspect ratio check button
         self.aspect_locked = tkinter.IntVar()
+        self.status_text = tkinter.StringVar()
+        self.status_text.set("  Welcome to Viewy!")
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
@@ -48,10 +52,12 @@ class MainWindow:
                                                  self.win_y_offset))
         mainWindow.configure(background='black')
 
-        self.win_location()  # TODO del
+        self.win_location()  # TODO del ???
 
         # Create Menu, Image backing frame, and Canvas
         self.menubar = tkinter.Menu(mainWindow)
+        self.menubar.bind('<<MenuSelect>>', self.menubar_selected)
+
         self.image_frame = tkinter.Frame(
             mainWindow, background='blue')
         self.image_frame.pack(fill=tkinter.BOTH, expand=True)
@@ -75,16 +81,91 @@ class MainWindow:
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
             scrollregion=(0, 0, self.image_width, self.image_height))
-        # print(self.canvas.winfo_width(), self.canvas.winfo_height())
 
         self.file_menu = tkinter.Menu(self.menubar, tearoff=0)
+        self.file_menu.bind('<<MenuSelect>>', self.status_update)
         self.view_menu = tkinter.Menu(self.menubar, tearoff=0)
+        self.view_menu.bind('<<MenuSelect>>', self.status_update)
         self.image_menu = tkinter.Menu(self.menubar, tearoff=0)
+        self.image_menu.bind('<<MenuSelect>>', self.status_update)
         self.window_menu = tkinter.Menu(self.menubar, tearoff=0)
+        self.window_menu.bind('<<MenuSelect>>', self.status_update)
         self.help_menu = tkinter.Menu(self.menubar, tearoff=0)
+        self.help_menu.bind('<<MenuSelect>>', self.status_update)
+
+        self.menu_dict = {
+            0: {
+                0: "Load 1 or more images",
+                1: "Load a directory of images",
+                2: "Start a new session and customize timing options",
+                3: "Save your current session",
+                4: "Load a previously saved session",
+                5: None,
+                6: "Exit the program"
+            },
+            1: {
+                0: "Zoom into the image",
+                1: "Zoom out from the image",
+                2: "Zoom image to fit the width of the window",
+                3: "Zoom image to fit the height of the window",
+                4: "Reset the image to its original aspect",
+                5: None,
+                6: "Flip the image vertically",
+                7: "Flip the image horizontally",
+                8: "Rotate the image counter-clockwise",
+                9: "Rotate the image clockwise",
+                10: "Rotate the image by a custom amount"
+            },
+            2: {
+                0: "Undo the last action",
+                1: "Redo the undone action",
+                2: "Skip the current image",
+                3: "Go to the previous image",
+                4: "Search this image on Google",
+                5: None,
+                6: "Resize the image by custom amount",
+                7: "Add a vignette border to the image",
+                8: "Brighten the image",
+                9: "Apply Levels - Darken to the image",
+                10: "Apply a Median filter to the image",
+                11: "Upscale the image"
+            },
+            3: {
+                0: "Minimize the program window",
+                1: "Restore the program window",
+                2: "Fit the window to the screen's width",
+                3: "Fit the window to the screen's height",
+                4: "Maximize the window",
+                5: None,
+                6: "Lock the current aspect ratio of the window",
+                7: None,
+                8: "Fit the window to the width of the image",
+                9: "Fit the window to the height of the image",
+                10: "Fit the window to the size of the image",
+                11: None,
+                12: "Show the tools sidebar",
+                13: "Hide the tools sidebar"
+            },
+            4: {
+                0: "Access help documentation",
+                1: None,
+                2: "About this program"
+            }
+        }
+
+        # add menubar labels
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.menubar.add_cascade(
+            label="View", menu=self.view_menu, state='disabled')
+        self.menubar.add_cascade(
+            label="Image", menu=self.image_menu, state='disabled')
+        self.menubar.add_cascade(
+            label="Window", menu=self.window_menu)
+        self.menubar.add_cascade(label="Help", menu=self.help_menu)
 
         self.file_menu.add_command(
             label="Load Image(s)", command=self.load_image)
+        # self.file_menu.bind("<<MenuSelect>>", self.status_update)
         self.file_menu.add_command(
             label="Load Directory", command=self.load_dir)
         self.file_menu.add_command(
@@ -99,11 +180,12 @@ class MainWindow:
         self.file_menu.add_command(label="Exit", command=mainWindow.quit)
 
         self.view_menu.add_command(label="Zoom In", command=self.zoom_in)
+        # self.view_menu.bind("<<MenuSelect>>", self.status_update)
         self.view_menu.add_command(label="Zoom Out", command=self.zoom_out)
         self.view_menu.add_command(
-            label="Zoom to Screen Width", command=self.zoom_to_width)
+            label="Zoom to Window Width", command=self.zoom_to_width)
         self.view_menu.add_command(
-            label="Zoom to Screen Height", command=self.zoom_to_height)
+            label="Zoom to Window Height", command=self.zoom_to_height)
         self.view_menu.add_command(label="Reset Zoom", command=self.zoom_reset)
         self.view_menu.add_separator()
         self.view_menu.add_command(
@@ -163,19 +245,24 @@ class MainWindow:
         self.help_menu.add_separator()
         self.help_menu.add_command(label="About", command=self.about)
 
-        # add menubar labels
-        self.menubar.add_cascade(label="File", menu=self.file_menu)
-        self.menubar.add_cascade(
-            label="View", menu=self.view_menu, state='disabled')
-        self.menubar.add_cascade(
-            label="Image", menu=self.image_menu, state='disabled')
-        self.menubar.add_cascade(
-            label="Window", menu=self.window_menu)
-        self.menubar.add_cascade(label="Help", menu=self.help_menu)
-
         mainWindow.config(menu=self.menubar)
-        # print(mainWindow.wm_state()) # TODO del
-        print(self.aspect_locked.get())
+
+        # Status bar at bottom of screen
+        # Using anchor= instead of justify= because justify on ly works for multiline
+        self.status_bar = tkinter.Label(
+            relief=tkinter.SUNKEN, anchor='w', textvariable=self.status_text)
+        self.status_bar.pack(fill=tkinter.X)
+
+    def menubar_selected(self, event=None):
+        self.menubar_sel = mainWindow.call(event.widget, 'index', 'active')
+
+    def status_update(self, event=None):
+        self.submenu_sel = mainWindow.call(event.widget, 'index', 'active')
+        if isinstance(self.menubar_sel, int) and isinstance(self.submenu_sel, int):
+            print("Menu item:", self.menubar_sel)
+            print("Current submenu item selected:", self.submenu_sel)
+            if self.menu_dict[self.menubar_sel][self.submenu_sel] is not None:
+                print(self.menu_dict[self.menubar_sel-1][self.submenu_sel])
 
     def load_image(self):
         self.win_location()
@@ -200,14 +287,16 @@ class MainWindow:
             self.menubar.entryconfig("View", state='normal')
             self.menubar.entryconfig("Image", state='normal')
             self.lock_aspect()
-            self.window_menu.entryconfig(10, state='normal')
-            self.window_menu.entryconfig(11, state='normal')
+            self.window_menu.entryconfig(12, state='normal')
+            self.window_menu.entryconfig(13, state='normal')
 
             self.win_location()
 
+            self.status_text.set("  Image was loaded")
+
         except:
-            # raise
-            print("--> No image loaded")
+            raise
+            # print("--> No image loaded")
 
     def load_dir(self):
         pass
@@ -318,6 +407,7 @@ class MainWindow:
         mainWindow.wm_state('zoomed')
 
     def lock_aspect(self):
+        # if there's no image loaded
         if not [item for item in self.canvas.find_all()]:
             if self.aspect_locked.get() == 1:
                 mainWindow.resizable(False, False)
