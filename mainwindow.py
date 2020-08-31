@@ -138,15 +138,19 @@ class MainWindow:
         self.window_menu.add_command(label="Minimize", command=self.min_window)
         self.window_menu.add_command(
             label="Restore", command=self.restore_window)
+        self.window_menu.add_command(
+            label="Fit to Screen Width", command=self.fit_screen_width)
+        self.window_menu.add_command(
+            label="Fit to Screen Height", command=self.fit_screen_height)
         self.window_menu.add_command(label="Maximize", command=self.max_window)
         self.window_menu.add_separator()
         self.window_menu.add_checkbutton(
             label="Lock Aspect Ratio", variable=self.aspect_locked, command=self.lock_aspect)
         self.window_menu.add_separator()
         self.window_menu.add_command(
-            label="Fit to Height of Image", command=self.win_fit_height, state='disabled')
-        self.window_menu.add_command(
             label="Fit to Width of Image", command=self.win_fit_width, state='disabled')
+        self.window_menu.add_command(
+            label="Fit to Height of Image", command=self.win_fit_height, state='disabled')
         self.window_menu.add_command(
             label="Fit to Size of Image", command=self.win_fit_size, state='disabled')
         self.window_menu.add_separator()
@@ -291,6 +295,24 @@ class MainWindow:
     def restore_window():
         mainWindow.wm_state('normal')
 
+    def fit_screen_width(self):
+        self.win_location()  # poll location coords
+        self.win_x_offset = 1922
+        # -8 pixels to fit perfectly on screen
+        self.win_width = self.screen_width-8
+        mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
+                                                 mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
+
+    def fit_screen_height(self):
+        self.win_location()
+        self.win_y_offset = 0
+        # -51 pixels to fit bottom perfectly on screen
+        self.win_height = self.screen_height-51
+        print("Win height:", self.win_height)
+        print("Screen height:", self.screen_height)
+        mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
+                                                 self.win_height, self.win_x_offset, self.win_y_offset))
+
     @staticmethod
     def max_window():
         mainWindow.wm_state('zoomed')
@@ -299,41 +321,53 @@ class MainWindow:
         if not [item for item in self.canvas.find_all()]:
             if self.aspect_locked.get() == 1:
                 mainWindow.resizable(False, False)
-                self.window_menu.entryconfig(6, state='disabled')
-                self.window_menu.entryconfig(7, state='disabled')
+                self.window_menu.entryconfig(1, state='disabled')
+                self.window_menu.entryconfig(2, state='disabled')
+                self.window_menu.entryconfig(3, state='disabled')
+                self.window_menu.entryconfig(4, state='disabled')
                 self.window_menu.entryconfig(8, state='disabled')
+                self.window_menu.entryconfig(9, state='disabled')
+                self.window_menu.entryconfig(10, state='disabled')
             else:
                 mainWindow.resizable(True, True)
-                self.window_menu.entryconfig(6, state='disabled')
-                self.window_menu.entryconfig(7, state='disabled')
+                self.window_menu.entryconfig(1, state='normal')
+                self.window_menu.entryconfig(2, state='normal')
+                self.window_menu.entryconfig(3, state='normal')
+                self.window_menu.entryconfig(4, state='normal')
                 self.window_menu.entryconfig(8, state='disabled')
+                self.window_menu.entryconfig(9, state='disabled')
+                self.window_menu.entryconfig(10, state='disabled')
         else:
             if self.aspect_locked.get() == 1:
                 mainWindow.resizable(False, False)
                 self.window_menu.entryconfig(1, state='disabled')
                 self.window_menu.entryconfig(2, state='disabled')
-                self.window_menu.entryconfig(6, state='disabled')
-                self.window_menu.entryconfig(7, state='disabled')
+                self.window_menu.entryconfig(3, state='disabled')
+                self.window_menu.entryconfig(4, state='disabled')
                 self.window_menu.entryconfig(8, state='disabled')
+                self.window_menu.entryconfig(9, state='disabled')
+                self.window_menu.entryconfig(10, state='disabled')
             else:
                 mainWindow.resizable(True, True)
                 self.window_menu.entryconfig(1, state='normal')
                 self.window_menu.entryconfig(2, state='normal')
-                self.window_menu.entryconfig(6, state='normal')
-                self.window_menu.entryconfig(7, state='normal')
+                self.window_menu.entryconfig(3, state='normal')
+                self.window_menu.entryconfig(4, state='normal')
                 self.window_menu.entryconfig(8, state='normal')
+                self.window_menu.entryconfig(9, state='normal')
+                self.window_menu.entryconfig(10, state='normal')
 
     def win_fit_width(self):
+        self.win_location()
         if (self.image_width < self.screen_width):
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
         else:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(self.screen_width, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
-        print("Fit width End v")
 
     def win_fit_height(self):
-        # self.win_location()
+        self.win_location()
         if self.image_height < self.screen_height:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.image_height + self.SBW, self.win_x_offset, self.win_y_offset))
@@ -342,7 +376,7 @@ class MainWindow:
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
 
     def win_fit_size(self):
-        # self.win_location()
+        self.win_location()
 
         # restore window before applying changes
         if mainWindow.wm_state() == 'zoomed':
@@ -359,8 +393,6 @@ class MainWindow:
                 "{}x{}+{}+{}".format(self.screen_width, self.image_height + self.SBW,  self.win_x_offset, self.win_y_offset))
         else:
             mainWindow.state('zoomed')  # maximize window
-
-        # self.win_location()
 
     def show_sidebar(self):
         pass
@@ -401,8 +433,6 @@ class MainWindow:
         ), mainWindow.winfo_screenheight()
         self.win_x_offset, self.win_y_offset = mainWindow.winfo_rootx() - \
             8, mainWindow.winfo_rooty()-51
-        # print("Screen w h :", self.screen_width, self.screen_height)
-        # print("Window x y offsets: ", self.win_x_offset, self.win_y_offset)
 
 
 if __name__ == "__main__":
