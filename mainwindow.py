@@ -297,18 +297,26 @@ class MainWindow:
 
     def lock_aspect(self):
         if not [item for item in self.canvas.find_all()]:
-            # if self.aspect_locked.get() == 1:
-            self.window_menu.entryconfig(6, state='disabled')
-            self.window_menu.entryconfig(7, state='disabled')
-            self.window_menu.entryconfig(8, state='disabled')
+            if self.aspect_locked.get() == 1:
+                mainWindow.resizable(False, False)
+                self.window_menu.entryconfig(6, state='disabled')
+                self.window_menu.entryconfig(7, state='disabled')
+                self.window_menu.entryconfig(8, state='disabled')
+            else:
+                mainWindow.resizable(True, True)
+                self.window_menu.entryconfig(6, state='disabled')
+                self.window_menu.entryconfig(7, state='disabled')
+                self.window_menu.entryconfig(8, state='disabled')
         else:
             if self.aspect_locked.get() == 1:
+                mainWindow.resizable(False, False)
                 self.window_menu.entryconfig(1, state='disabled')
                 self.window_menu.entryconfig(2, state='disabled')
                 self.window_menu.entryconfig(6, state='disabled')
                 self.window_menu.entryconfig(7, state='disabled')
                 self.window_menu.entryconfig(8, state='disabled')
             else:
+                mainWindow.resizable(True, True)
                 self.window_menu.entryconfig(1, state='normal')
                 self.window_menu.entryconfig(2, state='normal')
                 self.window_menu.entryconfig(6, state='normal')
