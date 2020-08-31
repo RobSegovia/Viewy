@@ -93,6 +93,60 @@ class MainWindow:
         self.help_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.help_menu.bind('<<MenuSelect>>', self.status_update)
 
+        self.menu_list = [
+            [
+                "Load 1 or more images",
+                "Load a directory of images",
+                "Start a new session and customize timing options",
+                "Save your current session",
+                "Load a previously saved session",
+                None,
+                "Exit the program"],
+            [
+                "Zoom into the image",
+                "Zoom out from the image",
+                "Zoom image to fit the width of the window",
+                "Zoom image to fit the height of the window",
+                "Reset the image to its original aspect",
+                None,
+                "Flip the image vertically",
+                "Flip the image horizontally",
+                "Rotate the image counter-clockwise",
+                "Rotate the image clockwise",
+                "Rotate the image by a custom amount"],
+            [
+                "Undo the last action",
+                "Redo the undone action",
+                "Skip the current image",
+                "Go to the previous image",
+                "Search this image on Google",
+                None,
+                "Resize the image by custom amount",
+                "Add a vignette border to the image",
+                "Brighten the image",
+                "Apply Levels - Darken to the image",
+                "Apply a Median filter to the image",
+                "Upscale the image"],
+            [
+                "Minimize the program window",
+                "Restore the program window",
+                "Fit the window to the screen's width",
+                "Fit the window to the screen's height",
+                "Maximize the window",
+                None,
+                "Lock the current aspect ratio of the window",
+                None,
+                "Fit the window to the width of the image",
+                "Fit the window to the height of the image",
+                "Fit the window to the size of the image",
+                None,
+                "Show the tools sidebar",
+                "Hide the tools sidebar"],
+            [
+                "Access help documentation",
+                None,
+                "About this program"]
+        ]
         self.menu_dict = {
             0: {
                 0: "Load 1 or more images",
@@ -254,15 +308,23 @@ class MainWindow:
         self.status_bar.pack(fill=tkinter.X)
 
     def menubar_selected(self, event=None):
+        # update the menubar item attribute for use in status bar function
         self.menubar_sel = mainWindow.call(event.widget, 'index', 'active')
 
     def status_update(self, event=None):
         self.submenu_sel = mainWindow.call(event.widget, 'index', 'active')
         if isinstance(self.menubar_sel, int) and isinstance(self.submenu_sel, int):
-            print("Menu item:", self.menubar_sel)
-            print("Current submenu item selected:", self.submenu_sel)
-            if self.menu_dict[self.menubar_sel][self.submenu_sel] is not None:
-                print(self.menu_dict[self.menubar_sel-1][self.submenu_sel])
+            # print("\nMenu item:", self.menubar_sel-1)
+            # print("Current submenu item selected:", self.submenu_sel)
+
+            # TODO may not need this condition anymore ??
+            if self.menu_dict[self.menubar_sel-1][self.submenu_sel] is not None:
+                # print(self.menu_dict[self.menubar_sel-1][self.submenu_sel])
+                self.status_text.set("  {}".format(
+                    self.menu_dict[self.menubar_sel-1][self.submenu_sel]))
+
+        else:
+            self.status_text.set("")
 
     def load_image(self):
         self.win_location()
