@@ -3,6 +3,7 @@ import tkinter.filedialog
 import PIL.Image
 import PIL.ImageTk
 import cv2
+import os
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
@@ -48,7 +49,10 @@ class MainWindow:
 
         self.image_index = None
         self.filenames_string = None
+        self.filenames_list = []
         self.total_images = None
+
+        self.load_dir_bool = False
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
@@ -125,8 +129,8 @@ class MainWindow:
             2: {
                 0: "Undo the last action",
                 1: "Redo the undone action",
-                2: "Skip the current image",
-                3: "Go to the previous image",
+                2: "Go to the next image",
+                3: "Go back to the previous image",
                 4: "Search this image on Google",
                 5: None,
                 6: "Resize the image by custom amount",
@@ -165,6 +169,7 @@ class MainWindow:
             ('Image Files', '*.jpeg;*.jpg;*.jpe;*.jp2;*.jfif;*.png;*.bmp;*.dib;*.webp;*.tiff;*.tif'),
             ('All Files', '*.*')
         ]
+        self.file_types_list = self.file_types[0][1].split(';')
 
         # add menubar labels
         self.menubar.add_cascade(label="File", menu=self.file_menu)
@@ -185,7 +190,6 @@ class MainWindow:
             label="New Session", command=self.new_session)
         self.file_menu.add_command(
             label="Save Session", command=self.save_session)
-        # disable this option
         self.file_menu.entryconfig("Save Session", state="disabled")
         self.file_menu.add_command(
             label="Load Session", command=self.load_session)
@@ -217,8 +221,9 @@ class MainWindow:
         self.image_menu.add_command(label="Undo", command=self.undo)
         self.image_menu.add_command(label="Redo", command=self.redo)
         self.image_menu.add_command(
-            label="Skip Image", command=self.skip_image)
-        self.image_menu.add_command(label="Go Back", command=self.go_back)
+            label="Next Image", command=self.skip_image)
+        self.image_menu.add_command(
+            label="Previous Image", command=self.prev_image)
         self.image_menu.add_command(
             label="Search Image on Google", command=self.search_google)
         self.image_menu.add_separator()
@@ -298,13 +303,11 @@ class MainWindow:
         # poll window location before refreshing
         self.win_location()
 
-        if event is None:
+        if event is None and self.load_dir_bool is False:
             try:
                 # returns tuple of image paths
-                self.filenames_string = tkinter.filedialog.askopenfilenames(
-                    initialdir="/",
-                    title="Select one or more images",
-                    filetypes=self.file_types)
+                self.filenames_string = tkinter.filedialog.askopenfilenames(title="Select one or more images",
+                                                                            filetypes=self.file_types)
                 # this index is always 0 here, it will get ++ or -- as images are iterated later
                 self.image_index = 0
 
@@ -333,11 +336,61 @@ class MainWindow:
             except:
                 raise
                 self.status_text.set("  No image loaded")
-        else:
-            # print()
-            # print(event.keysym)
-            # print()
 
+        elif event is None and self.load_dir_bool is True:
+
+            print(self.file_types_list)
+            # reset filenames_list
+
+            try:
+                # returns tuple of image paths
+                self.dir_path = tkinter.filedialog.askdirectory(
+                    title="Select a directory of images to load")
+                # this index is always 0 here, it will get ++ or -- as images are iterated later
+                self.image_index = 0
+
+                for file_name in os.listdir(self.dir_path):
+                    full_path = os.path.join(self.dir_path, file_name)
+
+                    # for every extension type in the reference list
+                    for string in self.file_types_list:
+                        # if the extension exists in the element
+                        if (file_name[-4:] in string):
+                            # then add it to the list
+                            self.filenames_list.append(full_path)
+                    # NOTE: list comprehension version; for loop is more readable in this case
+                    # [self.filenames_list.append(full_path) for string in self.file_types_list if (
+                    #     file_name[-4:] in string)]
+
+                print(self.filenames_list)
+                self.total_images = len(self.filenames_list)
+
+                if self.total_images == 1:
+                    self.status_text.set("  Image was loaded successfully")
+                else:
+                    self.info_text.set("{} of {} images  ".format(
+                        self.image_index, self.total_images))
+                    self.status_text.set("  {} images were queued successfully".format(
+                        len(self.filenames_list)))
+
+                # TODO refactor this code to avoid repetition
+                # enable menu items once an image is loaded
+                # NOTE: add_separator does not have a state!
+                self.file_menu.entryconfig(3, state='normal')
+                self.menubar.entryconfig("View", state='normal')
+                self.menubar.entryconfig("Image", state='normal')
+                self.lock_aspect()
+                self.window_menu.entryconfig(8, state='normal')
+                self.window_menu.entryconfig(9, state='normal')
+                self.window_menu.entryconfig(10, state='normal')
+                self.window_menu.entryconfig(12, state='normal')
+                self.window_menu.entryconfig(13, state='normal')
+
+            except:
+                # raise
+                self.status_text.set("  No image loaded")
+
+        else:
             # if a key has been pressed, cycle to next/prev image
             if event.keysym == 'Right' and self.image_index < len(self.filenames_string) - 1:
                 self.image_index += 1
@@ -368,7 +421,8 @@ class MainWindow:
         #     self.image_width, self.image_height))
 
     def load_dir(self):
-        pass
+        self.load_dir_bool = True
+        self.load_image()
 
     def new_session(self):
         pass
@@ -422,7 +476,7 @@ class MainWindow:
     def skip_image(self):
         pass
 
-    def go_back(self):
+    def prev_image(self):
         pass
 
     def search_google(self):
