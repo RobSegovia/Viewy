@@ -48,6 +48,7 @@ class MainWindow:
 
         self.image_index = None
         self.filenames_string = None
+        self.total_images = None
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
@@ -67,7 +68,7 @@ class MainWindow:
             mainWindow, background='blue')
         self.image_frame.pack(fill=tkinter.BOTH, expand=True)
         self.canvas = tkinter.Canvas(
-            self.image_frame, bg='red')
+            self.image_frame, bg='black')
 
         # Create Scrollbars
         self.vert_scrollbar = tkinter.Scrollbar(
@@ -159,6 +160,11 @@ class MainWindow:
                 2: "About this program"
             }
         }
+
+        self.file_types = [
+            ('Image Files', '*.jpeg;*.jpg;*.jpe;*.jp2;*.jfif;*.png;*.bmp;*.dib;*.webp;*.tiff;*.tif'),
+            ('All Files', '*.*')
+        ]
 
         # add menubar labels
         self.menubar.add_cascade(label="File", menu=self.file_menu)
@@ -296,17 +302,46 @@ class MainWindow:
             try:
                 # returns tuple of image paths
                 self.filenames_string = tkinter.filedialog.askopenfilenames(
-                    initialdir="/", title="Select one or more images")
+                    initialdir="/",
+                    title="Select one or more images",
+                    filetypes=self.file_types)
                 # this index is always 0 here, it will get ++ or -- as images are iterated later
                 self.image_index = 0
+
+                self.total_images = len(self.filenames_string)
+
+                if self.total_images == 1:
+                    self.status_text.set("  Image was loaded successfully")
+                else:
+                    self.info_text.set("{} of {} images  ".format(
+                        self.image_index, self.total_images))
+                    self.status_text.set("  {} images were queued successfully".format(
+                        len(self.filenames_string)))
+
+                # enable menu items once an image is loaded
+                # NOTE: add_separator does not have a state!
+                self.file_menu.entryconfig(3, state='normal')
+                self.menubar.entryconfig("View", state='normal')
+                self.menubar.entryconfig("Image", state='normal')
+                self.lock_aspect()
+                self.window_menu.entryconfig(8, state='normal')
+                self.window_menu.entryconfig(9, state='normal')
+                self.window_menu.entryconfig(10, state='normal')
+                self.window_menu.entryconfig(12, state='normal')
+                self.window_menu.entryconfig(13, state='normal')
+
             except:
                 raise
+                self.status_text.set("  No image loaded")
         else:
-            print(type(event.keysym))
+            # print()
+            # print(event.keysym)
+            # print()
+
             # if a key has been pressed, cycle to next/prev image
-            if event.keysym == 'Right' and self.image_index <= len(self.filenames_string) - 1:
+            if event.keysym == 'Right' and self.image_index < len(self.filenames_string) - 1:
                 self.image_index += 1
-            elif event.keysym == 'Left' and self.image_index >= len(self.filenames_string) - 1:
+            elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
         # load the first image into CV2 array
@@ -322,23 +357,15 @@ class MainWindow:
 
         self.refresh_image()
 
-        # enable menu items once an image is loaded
-        # NOTE: add_separator does not have a state!
-        self.file_menu.entryconfig(3, state='normal')
-        self.menubar.entryconfig("View", state='normal')
-        self.menubar.entryconfig("Image", state='normal')
-        self.lock_aspect()
-        self.window_menu.entryconfig(12, state='normal')
-        self.window_menu.entryconfig(13, state='normal')
-
         # poll window location after window was refreshed
         self.win_location()
 
-        self.status_text.set("  Image was loaded")
-        self.info_text.set("Size: {} x {} pixels  ".format(
-            self.image_width, self.image_height))
+        if self.total_images > 1:
+            self.info_text.set("Image {} of {}  ".format(
+                self.image_index+1, self.total_images))
 
-        # print("--> No image loaded")
+        # self.info_text.set("Size: {} x {} pixels  ".format(
+        #     self.image_width, self.image_height))
 
     def load_dir(self):
         pass
