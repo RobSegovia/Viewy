@@ -299,6 +299,7 @@ class MainWindow:
         else:
             self.status_text.set("")
 
+    # TODO: requires refactoring !!!!!!!
     def load_image(self, event=None):
         # poll window location before refreshing
         self.win_location()
@@ -308,10 +309,14 @@ class MainWindow:
                 # returns tuple of image paths
                 self.filenames_string = tkinter.filedialog.askopenfilenames(title="Select one or more images",
                                                                             filetypes=self.file_types)
+                # populate tuple items into list items
+                for item in self.filenames_string:
+                    self.filenames_list.append(item)
+
                 # this index is always 0 here, it will get ++ or -- as images are iterated later
                 self.image_index = 0
 
-                self.total_images = len(self.filenames_string)
+                self.total_images = len(self.filenames_list)
 
                 if self.total_images == 1:
                     self.status_text.set("  Image was loaded successfully")
@@ -338,9 +343,8 @@ class MainWindow:
                 self.status_text.set("  No image loaded")
 
         elif event is None and self.load_dir_bool is True:
-
-            print(self.file_types_list)
             # reset filenames_list
+            self.filenames_list.clear()
 
             try:
                 # returns tuple of image paths
@@ -362,7 +366,6 @@ class MainWindow:
                     # [self.filenames_list.append(full_path) for string in self.file_types_list if (
                     #     file_name[-4:] in string)]
 
-                print(self.filenames_list)
                 self.total_images = len(self.filenames_list)
 
                 if self.total_images == 1:
@@ -392,13 +395,13 @@ class MainWindow:
 
         else:
             # if a key has been pressed, cycle to next/prev image
-            if event.keysym == 'Right' and self.image_index < len(self.filenames_string) - 1:
+            if event.keysym == 'Right' and self.image_index < len(self.filenames_list) - 1:
                 self.image_index += 1
             elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
         # load the first image into CV2 array
-        self.cv2_image = cv2.imread(self.filenames_string[self.image_index])
+        self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
         # convert to PIL colour order
         self.cv2_image = cv2.cvtColor(
             self.cv2_image, cv2.COLOR_BGR2RGB)
@@ -417,23 +420,26 @@ class MainWindow:
             self.info_text.set("Image {} of {}  ".format(
                 self.image_index+1, self.total_images))
 
-        # self.info_text.set("Size: {} x {} pixels  ".format(
-        #     self.image_width, self.image_height))
-
     def load_dir(self):
+        # redirects to load_image() with directory functionality turned on
         self.load_dir_bool = True
         self.load_image()
 
     def new_session(self):
+        # this will require a pop-up window with options
+        # such as: automatic zoom to window size
         pass
 
     def save_session(self):
+        # use pickle ??
         pass
 
     def load_session(self):
         pass
 
     def zoom_in(self):
+        # need to ensure that there is a copy of the original image
+        # so that zoom can be reverted for the next few methods
         pass
 
     def zoom_out(self):
