@@ -44,6 +44,10 @@ class MainWindow:
         self.aspect_locked = tkinter.IntVar()
         self.status_text = tkinter.StringVar()
         self.status_text.set("  Welcome to Viewy!")
+        self.info_text = tkinter.StringVar()
+
+        self.image_index = None
+        self.filenames_string = None
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
@@ -51,6 +55,7 @@ class MainWindow:
                                                  self.win_x_offset,
                                                  self.win_y_offset))
         mainWindow.configure(background='black')
+        mainWindow.bind('<Key>', self.load_image)
 
         self.win_location()  # TODO del ???
 
@@ -93,60 +98,6 @@ class MainWindow:
         self.help_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.help_menu.bind('<<MenuSelect>>', self.status_update)
 
-        self.menu_list = [
-            [
-                "Load 1 or more images",
-                "Load a directory of images",
-                "Start a new session and customize timing options",
-                "Save your current session",
-                "Load a previously saved session",
-                None,
-                "Exit the program"],
-            [
-                "Zoom into the image",
-                "Zoom out from the image",
-                "Zoom image to fit the width of the window",
-                "Zoom image to fit the height of the window",
-                "Reset the image to its original aspect",
-                None,
-                "Flip the image vertically",
-                "Flip the image horizontally",
-                "Rotate the image counter-clockwise",
-                "Rotate the image clockwise",
-                "Rotate the image by a custom amount"],
-            [
-                "Undo the last action",
-                "Redo the undone action",
-                "Skip the current image",
-                "Go to the previous image",
-                "Search this image on Google",
-                None,
-                "Resize the image by custom amount",
-                "Add a vignette border to the image",
-                "Brighten the image",
-                "Apply Levels - Darken to the image",
-                "Apply a Median filter to the image",
-                "Upscale the image"],
-            [
-                "Minimize the program window",
-                "Restore the program window",
-                "Fit the window to the screen's width",
-                "Fit the window to the screen's height",
-                "Maximize the window",
-                None,
-                "Lock the current aspect ratio of the window",
-                None,
-                "Fit the window to the width of the image",
-                "Fit the window to the height of the image",
-                "Fit the window to the size of the image",
-                None,
-                "Show the tools sidebar",
-                "Hide the tools sidebar"],
-            [
-                "Access help documentation",
-                None,
-                "About this program"]
-        ]
         self.menu_dict = {
             0: {
                 0: "Load 1 or more images",
@@ -182,7 +133,9 @@ class MainWindow:
                 8: "Brighten the image",
                 9: "Apply Levels - Darken to the image",
                 10: "Apply a Median filter to the image",
-                11: "Upscale the image"
+                11: "Upscale the image",
+                12: None,
+                13: "Show information about the image"
             },
             3: {
                 0: "Minimize the program window",
@@ -252,6 +205,8 @@ class MainWindow:
             label="Rotate Right", command=self.rotate_right)
         self.view_menu.add_command(
             label="Rotate Amount", command=self.rotate_amount)
+        self.view_menu.add_separator()
+        self.view_menu.add_command(label="Image Info", command=self.image_info)
 
         self.image_menu.add_command(label="Undo", command=self.undo)
         self.image_menu.add_command(label="Redo", command=self.redo)
@@ -305,7 +260,14 @@ class MainWindow:
         # Using anchor= instead of justify= because justify on ly works for multiline
         self.status_bar = tkinter.Label(
             relief=tkinter.SUNKEN, anchor='w', textvariable=self.status_text)
-        self.status_bar.pack(fill=tkinter.X)
+        self.status_bar.pack(side='left', fill='x', expand=True)
+        # Info bar which sits beside status bar
+        self.info_bar = tkinter.Label(
+            relief='sunken',
+            anchor='e',
+            textvariable=self.info_text,
+            width=20)
+        self.info_bar.pack(side='right', fill='x')
 
     def menubar_selected(self, event=None):
         # update the menubar item attribute for use in status bar function
@@ -326,39 +288,57 @@ class MainWindow:
         else:
             self.status_text.set("")
 
-    def load_image(self):
+    def load_image(self, event=None):
+        # poll window location before refreshing
         self.win_location()
-        try:
-            filename = tkinter.filedialog.askopenfilename(
-                initialdir="/", title="Select an Image")
-            # load image into CV2 array
-            self.cv2_image = cv2.imread(filename)
-            # convert to PIL colour order
-            self.cv2_image = cv2.cvtColor(self.cv2_image, cv2.COLOR_BGR2RGB)
-            # convert array to PIL format
-            self.pil_image = PIL.Image.fromarray(self.cv2_image)
-            # convert to tkinter format
-            self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
-            self.image_dimensions(self.tk_image)
 
-            self.refresh_image()
+        if event is None:
+            try:
+                # returns tuple of image paths
+                self.filenames_string = tkinter.filedialog.askopenfilenames(
+                    initialdir="/", title="Select one or more images")
+                # this index is always 0 here, it will get ++ or -- as images are iterated later
+                self.image_index = 0
+            except:
+                raise
+        else:
+            print(type(event.keysym))
+            # if a key has been pressed, cycle to next/prev image
+            if event.keysym == 'Right' and self.image_index <= len(self.filenames_string) - 1:
+                self.image_index += 1
+            elif event.keysym == 'Left' and self.image_index >= len(self.filenames_string) - 1:
+                self.image_index -= 1
 
-            # enable menu items once an image is loaded
-            # NOTE: add_separator does not have a state!
-            self.file_menu.entryconfig(3, state='normal')
-            self.menubar.entryconfig("View", state='normal')
-            self.menubar.entryconfig("Image", state='normal')
-            self.lock_aspect()
-            self.window_menu.entryconfig(12, state='normal')
-            self.window_menu.entryconfig(13, state='normal')
+        # load the first image into CV2 array
+        self.cv2_image = cv2.imread(self.filenames_string[self.image_index])
+        # convert to PIL colour order
+        self.cv2_image = cv2.cvtColor(
+            self.cv2_image, cv2.COLOR_BGR2RGB)
+        # convert array to PIL format
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        # convert to tkinter format
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.image_dimensions(self.tk_image)
 
-            self.win_location()
+        self.refresh_image()
 
-            self.status_text.set("  Image was loaded")
+        # enable menu items once an image is loaded
+        # NOTE: add_separator does not have a state!
+        self.file_menu.entryconfig(3, state='normal')
+        self.menubar.entryconfig("View", state='normal')
+        self.menubar.entryconfig("Image", state='normal')
+        self.lock_aspect()
+        self.window_menu.entryconfig(12, state='normal')
+        self.window_menu.entryconfig(13, state='normal')
 
-        except:
-            raise
-            # print("--> No image loaded")
+        # poll window location after window was refreshed
+        self.win_location()
+
+        self.status_text.set("  Image was loaded")
+        self.info_text.set("Size: {} x {} pixels  ".format(
+            self.image_width, self.image_height))
+
+        # print("--> No image loaded")
 
     def load_dir(self):
         pass
@@ -400,6 +380,10 @@ class MainWindow:
         pass
 
     def rotate_amount(self):
+        pass
+
+    def image_info(self):
+        # TODO add a popup window with info about image...size, name, etc
         pass
 
     def undo(self):
