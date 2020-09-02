@@ -53,7 +53,8 @@ class MainWindow:
         self.filenames_list = []
         self.total_images = None
 
-        self.load_dir_bool = False
+        self.load_image_var = tkinter.IntVar()
+        self.load_dir_var = tkinter.IntVar()
         self.random_on = tkinter.IntVar()
         self.auto_zoom_var = tkinter.IntVar()
 
@@ -63,7 +64,7 @@ class MainWindow:
                                                  self.win_x_offset,
                                                  self.win_y_offset))
         mainWindow.configure()
-        mainWindow.bind('<Key>', self.load_image)
+        mainWindow.bind('<Key>', self.load)
 
         self.win_location()  # TODO del ???
 
@@ -307,14 +308,22 @@ class MainWindow:
         else:
             self.status_text.set("")
 
+    def load_image(self):
+        self.load_image_var.set(1)
+        self.load(event=None)
+
+    def load_dir(self):
+        self.load_dir_var.set(1)
+        self.load(event=None)
+
     # TODO: requires refactoring !!!!!!!
-    def load_image(self, event=None, state=None):
+    def load(self, event=None):
 
         # poll window location before refreshing
         self.win_location()
 
         # load one or more images
-        if event is None and (self.load_dir_bool is False) and state is None:
+        if event is None and self.load_image_var.get() == 1:
             # disable randomization at beginning
             self.random_on.set(0)
             self.total_images = 0
@@ -358,10 +367,13 @@ class MainWindow:
                 self.window_menu.entryconfig(12, state='normal')
                 self.window_menu.entryconfig(13, state='normal')
 
+            # set to 0 so it won't run next time
+            # unless it's turned on by accessing its menu option
+            self.load_image_var.set(0)
+
         # load directory
-        elif event is None and (self.load_dir_bool is True) and state is None:
-            # reset load dir boolean
-            self.load_dir_bool = False
+        elif event is None and self.load_dir_var.get() == 1:
+
             # disable randomization at beginning
             self.random_on.set(0)
             # reset filenames_list
@@ -415,86 +427,7 @@ class MainWindow:
                 self.window_menu.entryconfig(12, state='normal')
                 self.window_menu.entryconfig(13, state='normal')
 
-        # AUTO ZOOM
-        elif event is None and state == 'zoom on':
-            print("\t", self.auto_zoom_var.get())
-            print("\tAuto zoom is on")
-            # TODO add code to resize image for zoom
-            print("win size:", mainWindow.winfo_width(),
-                  mainWindow.winfo_height())
-            print("image size:", self.image_width, self.image_height)
-
-            w1 = mainWindow.winfo_width()
-            h1 = mainWindow.winfo_height()
-            w2 = self.image_width
-            h2 = self.image_height
-
-            min_of_window = min(w1, h1)
-            max_of_window = max(w1, h1)
-            # min_of_image = min(w2, h2)
-            # max_of_image = max(w2, h2)
-
-            win_ratio = w1 / h1
-            image_ratio = w2 / h2
-
-            print("Min Max of window:", min_of_window, max_of_window)
-            print("Win ratio:", win_ratio)
-            print("Image ratio:", image_ratio)
-
-            # if ratios = same, resize both w and h to same size as window w and h
-            if win_ratio == 1 and image_ratio == 1:
-                self.resize_image(w1, h1)
-
-            # if both are horizontal
-            elif win_ratio > 1 and image_ratio > 1:
-                # same size
-                if win_ratio == image_ratio:
-                    self.resize_image(w1, h1)
-                # if window ratio is wider than image ratio
-                # then min of win ==> min of image
-                elif win_ratio > image_ratio:
-                    self.resize_image(
-                        int(min_of_window * image_ratio), min_of_window)
-                # if window ratio is less wide than image ratio
-                # then max of win ==> max of image
-                else:
-                    self.resize_image(
-                        max_of_window, int(max_of_window * image_ratio))
-
-            # if both are vertical
-            elif win_ratio < 1 and image_ratio < 1:
-                # same size
-                if win_ratio == image_ratio:
-                    self.resize_image(w1, h1)
-                # if window ratio is more(shorter) than image ratio
-                # then max of win ==> max of image
-                elif win_ratio > image_ratio:
-                    self.resize_image(
-                        int(max_of_window * image_ratio), max_of_window)
-                # if window ratio is less(taller) than image ratio
-                # then min of win ==> min of image
-                else:
-                    self.resize_image(
-                        min_of_window, int(min_of_window * image_ratio))
-
-            # if win is vertical and image is horizontal
-            elif win_ratio < 1 and image_ratio > 1:
-                # max of image ==> min of window
-                self.resize_image(min_of_window, int(
-                    min_of_window * image_ratio))
-
-            # if win is horizontal and image is verical
-            elif win_ratio > 1 and image_ratio < 1:
-                # min of window ==> max of image
-                self.resize_image(
-                    int(min_of_window * image_ratio), min_of_window)
-
-            print("\t-Reached end of Zoom in load_image ")
-            # self.resize_image()
-
-        elif event is None and state == 'zoom off':
-            print("\t", self.auto_zoom_var.get())
-            print("\tAuto zoom is off")
+            self.load_dir_var.set(0)
 
         # if a key has been pressed, cycle to next/prev image
         if event is not None:
@@ -503,7 +436,8 @@ class MainWindow:
             elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
-        if state == 'zoom off':
+        if self.auto_zoom_var.get() == 0:
+            print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
             # convert to PIL colour order
@@ -517,17 +451,104 @@ class MainWindow:
 
             self.refresh_image()
 
+        # AUTO ZOOM is ON
+        if self.auto_zoom_var.get() == 1:
+            # NOTE image needs to load after key event
+            # before it can be resized...
+            # load the image into CV2 array
+            self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+            # convert to PIL colour order
+            self.cv2_image = cv2.cvtColor(
+                self.cv2_image, cv2.COLOR_BGR2RGB)
+            # convert array to PIL format
+            self.pil_image = PIL.Image.fromarray(self.cv2_image)
+
+            print("Auto zoom is on:", self.auto_zoom_var.get())
+            print("win size:", mainWindow.winfo_width(),
+                  mainWindow.winfo_height())
+            print("image size:", self.image_width, self.image_height)
+
+            w1 = mainWindow.winfo_width()
+            h1 = mainWindow.winfo_height()
+            w2 = self.image_width
+            h2 = self.image_height
+
+            min_of_window = min(w1, h1)
+            max_of_window = max(w1, h1)
+
+            win_ratio = w1 / h1
+            image_ratio = w2 / h2
+
+            # print("Min Max of window:", min_of_window, max_of_window)
+            print("Win ratio:", win_ratio)
+            print("Image ratio:", image_ratio)
+
+            # if ratios = same, resize both w and h to same size as window w and h
+            if win_ratio == 1 and image_ratio == 1:
+                self.resize_image(w1, h1)
+                print("1-")
+
+            # if both are horizontal
+            elif win_ratio > 1 and image_ratio > 1:
+                # same size
+                if win_ratio == image_ratio:
+                    self.resize_image(w1, h1)
+                    print("2--1")
+                # if window ratio is wider than image ratio
+                # then min of win ==> min of image
+                elif win_ratio > image_ratio:
+                    self.resize_image(
+                        int(min_of_window * image_ratio), min_of_window)
+                    print("2--2")
+                # if window ratio is less wide than image ratio
+                # then max of win ==> max of image
+                else:
+                    self.resize_image(
+                        max_of_window, int(max_of_window * image_ratio))
+                    print("2--3")
+
+            # if both are vertical
+            elif win_ratio < 1 and image_ratio < 1:
+                # same size
+                if win_ratio == image_ratio:
+                    self.resize_image(w1, h1)
+                    print("3--1")
+                # if window ratio is more(shorter) than image ratio
+                # then max of win ==> max of image
+                elif win_ratio > image_ratio:
+                    self.resize_image(
+                        int(max_of_window * image_ratio), max_of_window)
+                    print("3--2")
+                # if window ratio is less(taller) than image ratio
+                # then min of win ==> min of image
+                else:
+                    self.resize_image(
+                        min_of_window, int(min_of_window * image_ratio))
+                    print("3--3")
+
+            # if win is vertical and image is horizontal
+            elif win_ratio < 1 and image_ratio > 1:
+                # max of image ==> min of window
+                self.resize_image(min_of_window, int(
+                    min_of_window * image_ratio))
+                print("4-")
+
+            # if win is horizontal and image is verical
+            elif win_ratio > 1 and image_ratio < 1:
+                # min of window ==> max of image
+                self.resize_image(
+                    int(min_of_window * image_ratio), min_of_window)
+                print("5-")
+
+            print("Reached end of Zoom in load_image ")
+            print()
+
         # poll window location after window was refreshed
         self.win_location()
 
         if self.total_images >= 1:
             self.info_text.set("Image {} of {}  ".format(
                 self.image_index+1, self.total_images))
-
-    def load_dir(self):
-        # redirects to load_image() with directory functionality turned on
-        self.load_dir_bool = True
-        self.load_image()
 
     def new_session(self):
         # this will require a pop-up window with options
@@ -557,9 +578,7 @@ class MainWindow:
 
     def auto_zoom(self):
         if self.auto_zoom_var.get() == 1:
-            self.load_image(event=None, state='zoom on')
-        else:
-            self.load_image(event=None, state='zoom off')
+            self.load(event=None)
 
     def zoom_reset(self):
         pass
@@ -600,7 +619,7 @@ class MainWindow:
 
     def resize_image(self, x=200, y=200):
         print("\t--inside resize_image")
-        print("\t\tX Y:", x, y)
+        print("\t--X Y:", x, y)
         # use earlier pil_image to resize then reconvert and display
         self.tk_image = self.pil_image.resize((x, y), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
@@ -762,7 +781,6 @@ class MainWindow:
         # store a reference to the image so it won't be deleted
         # by the garbage collector
         self.tk_image.image = self.tk_image
-        # print(mainWindow.wm_state()) # TODO del
 
     def image_dimensions(self, image):
         self.image_width = image.width()
