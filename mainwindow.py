@@ -55,13 +55,14 @@ class MainWindow:
 
         self.load_dir_bool = False
         self.random_on = tkinter.IntVar()
+        self.auto_zoom_var = tkinter.IntVar()
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
                                                  self.win_height,
                                                  self.win_x_offset,
                                                  self.win_y_offset))
-        mainWindow.configure(background='black')
+        mainWindow.configure()
         mainWindow.bind('<Key>', self.load_image)
 
         self.win_location()  # TODO del ???
@@ -71,7 +72,7 @@ class MainWindow:
         self.menubar.bind('<<MenuSelect>>', self.menubar_selected)
 
         self.image_frame = tkinter.Frame(
-            mainWindow, background='blue')
+            mainWindow)
         self.image_frame.pack(fill=tkinter.BOTH, expand=True)
         self.canvas = tkinter.Canvas(
             self.image_frame, bg='black')
@@ -120,15 +121,16 @@ class MainWindow:
                 1: "Zoom out from the image",
                 2: "Zoom image to fit the width of the window",
                 3: "Zoom image to fit the height of the window",
-                4: "Reset the image to its original aspect",
-                5: None,
-                6: "Flip the image vertically",
-                7: "Flip the image horizontally",
-                8: "Rotate the image counter-clockwise",
-                9: "Rotate the image clockwise",
-                10: "Rotate the image by a custom amount",
-                11: None,
-                12: "Randomize the order of the images"
+                4: "Automatically zoom every image to fit the window",
+                5: "Reset the image to its original aspect",
+                6: None,
+                7: "Flip the image vertically",
+                8: "Flip the image horizontally",
+                9: "Rotate the image counter-clockwise",
+                10: "Rotate the image clockwise",
+                11: "Rotate the image by a custom amount",
+                12: None,
+                13: "Randomize the order of the images"
             },
             2: {
                 0: "Undo the last action",
@@ -201,12 +203,13 @@ class MainWindow:
         self.file_menu.add_command(label="Exit", command=mainWindow.quit)
 
         self.view_menu.add_command(label="Zoom In", command=self.zoom_in)
-        # self.view_menu.bind("<<MenuSelect>>", self.status_update)
         self.view_menu.add_command(label="Zoom Out", command=self.zoom_out)
         self.view_menu.add_command(
             label="Zoom to Window Width", command=self.zoom_to_width)
         self.view_menu.add_command(
             label="Zoom to Window Height", command=self.zoom_to_height)
+        self.view_menu.add_checkbutton(
+            label="Auto Zoom to Fit Window", variable=self.auto_zoom_var, command=self.auto_zoom)
         self.view_menu.add_command(label="Reset Zoom", command=self.zoom_reset)
         self.view_menu.add_separator()
         self.view_menu.add_command(
@@ -305,13 +308,13 @@ class MainWindow:
             self.status_text.set("")
 
     # TODO: requires refactoring !!!!!!!
-    def load_image(self, event=None):
+    def load_image(self, event=None, state=None):
 
         # poll window location before refreshing
         self.win_location()
 
         # load one or more images
-        if event is None and self.load_dir_bool is False:
+        if event is None and (self.load_dir_bool is False) and state is None:
             # disable randomization at beginning
             self.random_on.set(0)
             self.total_images = 0
@@ -356,10 +359,9 @@ class MainWindow:
                 self.window_menu.entryconfig(13, state='normal')
 
         # load directory
-        elif event is None and self.load_dir_bool is True:
+        elif event is None and (self.load_dir_bool is True) and state is None:
             # reset load dir boolean
             self.load_dir_bool = False
-            # self.total_images = 0
             # disable randomization at beginning
             self.random_on.set(0)
             # reset filenames_list
@@ -412,6 +414,78 @@ class MainWindow:
                 self.window_menu.entryconfig(10, state='normal')
                 self.window_menu.entryconfig(12, state='normal')
                 self.window_menu.entryconfig(13, state='normal')
+
+        # AUTO ZOOM
+        elif event is None and state == 'zoom on':
+            print("\t", self.auto_zoom_var.get())
+            print("\tAuto zoom is on")
+            # TODO add code to resize image for zoom
+            print("win size:", mainWindow.winfo_width(),
+                  mainWindow.winfo_height())
+            print("image size:", self.image_width, self.image_height)
+
+            w1 = mainWindow.winfo_width()
+            h1 = mainWindow.winfo_height()
+            w2 = self.image_width
+            h2 = self.image_height
+
+            min_of_window = min(w1, h1)
+            max_of_image = max(w2, h2)
+
+            win_ratio = w1 / h1
+            image_ratio = w2 / h2
+
+            print("Min of window:", min_of_window)
+            print("Max of image:", max_of_image)
+            print("Win ratio:", win_ratio)
+            print("Image ratio:", image_ratio)
+
+            # if ratios = same, resize both w and h to same size as window w and h
+            if win_ratio == 1 and image_ratio == 1:
+                self.image_resize(w1, h1)
+
+            # if both are horizontal
+            elif win_ratio > 1 and image_ratio > 1:
+                # same size
+                if win_ratio == image_ratio:
+                    self.image_resize(w1, h1)
+                #
+                elif win_ratio > image_ratio:
+                    pass
+                else:
+                    pass
+
+            # if both are vertical
+            elif win_ratio < 1 and image_ratio < 1:
+                # same size
+                if win_ratio == image_ratio:
+                    self.image_resize(w1, h1)
+                elif win_ratio > image_ratio:
+                    pass
+                else:
+                    pass
+
+            # if win is horz and image is vertical
+            elif win_ratio < 1 and image_ratio > 1:
+                #
+                if win_ratio > image_ratio:
+                    pass
+                else:
+                    pass
+
+            # if win is vertical and image is horizontal
+            elif win_ratio > 1 and image_ratio < 1:
+                #
+                if win_ratio > image_ratio:
+                    pass
+                else:
+                    pass
+
+            # self.resize_image()
+
+        elif event is None and state == 'zoom off':
+            print("\t", self.auto_zoom_var.get())
+            print("\tAuto zoom is off")
 
         # if a key has been pressed, cycle to next/prev image
         if event is not None:
@@ -471,6 +545,12 @@ class MainWindow:
     def zoom_to_height(self):
         pass
 
+    def auto_zoom(self):
+        if self.auto_zoom_var.get() == 1:
+            self.load_image(event=None, state='zoom on')
+        else:
+            self.load_image(event=None, state='zoom off')
+
     def zoom_reset(self):
         pass
 
@@ -508,9 +588,9 @@ class MainWindow:
     def search_google(self):
         pass
 
-    def resize_image(self):
+    def resize_image(self, x, y):
         # use earlier pil_image to resize then reconvert and display
-        self.tk_image = self.pil_image.resize((200, 200), PIL.Image.ANTIALIAS)
+        self.tk_image = self.pil_image.resize((x, y), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
         self.tk_image = PIL.ImageTk.PhotoImage(self.tk_image)
         # destroy the image before refreshing
