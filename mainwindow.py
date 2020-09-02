@@ -430,57 +430,66 @@ class MainWindow:
             h2 = self.image_height
 
             min_of_window = min(w1, h1)
-            max_of_image = max(w2, h2)
+            max_of_window = max(w1, h1)
+            # min_of_image = min(w2, h2)
+            # max_of_image = max(w2, h2)
 
             win_ratio = w1 / h1
             image_ratio = w2 / h2
 
-            print("Min of window:", min_of_window)
-            print("Max of image:", max_of_image)
+            print("Min Max of window:", min_of_window, max_of_window)
             print("Win ratio:", win_ratio)
             print("Image ratio:", image_ratio)
 
             # if ratios = same, resize both w and h to same size as window w and h
             if win_ratio == 1 and image_ratio == 1:
-                self.image_resize(w1, h1)
+                self.resize_image(w1, h1)
 
             # if both are horizontal
             elif win_ratio > 1 and image_ratio > 1:
                 # same size
                 if win_ratio == image_ratio:
-                    self.image_resize(w1, h1)
-                #
+                    self.resize_image(w1, h1)
+                # if window ratio is wider than image ratio
+                # then min of win ==> min of image
                 elif win_ratio > image_ratio:
-                    pass
+                    self.resize_image(
+                        int(min_of_window * image_ratio), min_of_window)
+                # if window ratio is less wide than image ratio
+                # then max of win ==> max of image
                 else:
-                    pass
+                    self.resize_image(
+                        max_of_window, int(max_of_window * image_ratio))
 
             # if both are vertical
             elif win_ratio < 1 and image_ratio < 1:
                 # same size
                 if win_ratio == image_ratio:
-                    self.image_resize(w1, h1)
+                    self.resize_image(w1, h1)
+                # if window ratio is more(shorter) than image ratio
+                # then max of win ==> max of image
                 elif win_ratio > image_ratio:
-                    pass
+                    self.resize_image(
+                        int(max_of_window * image_ratio), max_of_window)
+                # if window ratio is less(taller) than image ratio
+                # then min of win ==> min of image
                 else:
-                    pass
-
-            # if win is horz and image is vertical
-            elif win_ratio < 1 and image_ratio > 1:
-                #
-                if win_ratio > image_ratio:
-                    pass
-                else:
-                    pass
+                    self.resize_image(
+                        min_of_window, int(min_of_window * image_ratio))
 
             # if win is vertical and image is horizontal
-            elif win_ratio > 1 and image_ratio < 1:
-                #
-                if win_ratio > image_ratio:
-                    pass
-                else:
-                    pass
+            elif win_ratio < 1 and image_ratio > 1:
+                # max of image ==> min of window
+                self.resize_image(min_of_window, int(
+                    min_of_window * image_ratio))
 
+            # if win is horizontal and image is verical
+            elif win_ratio > 1 and image_ratio < 1:
+                # min of window ==> max of image
+                self.resize_image(
+                    int(min_of_window * image_ratio), min_of_window)
+
+            print("\t-Reached end of Zoom in load_image ")
             # self.resize_image()
 
         elif event is None and state == 'zoom off':
@@ -494,18 +503,19 @@ class MainWindow:
             elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
-        # load the first image into CV2 array
-        self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
-        # convert to PIL colour order
-        self.cv2_image = cv2.cvtColor(
-            self.cv2_image, cv2.COLOR_BGR2RGB)
-        # convert array to PIL format
-        self.pil_image = PIL.Image.fromarray(self.cv2_image)
-        # convert to tkinter format
-        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
-        self.image_dimensions(self.tk_image)
+        if state == 'zoom off':
+            # load the first image into CV2 array
+            self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+            # convert to PIL colour order
+            self.cv2_image = cv2.cvtColor(
+                self.cv2_image, cv2.COLOR_BGR2RGB)
+            # convert array to PIL format
+            self.pil_image = PIL.Image.fromarray(self.cv2_image)
+            # convert to tkinter format
+            self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+            self.image_dimensions(self.tk_image)
 
-        self.refresh_image()
+            self.refresh_image()
 
         # poll window location after window was refreshed
         self.win_location()
@@ -588,7 +598,9 @@ class MainWindow:
     def search_google(self):
         pass
 
-    def resize_image(self, x, y):
+    def resize_image(self, x=200, y=200):
+        print("\t--inside resize_image")
+        print("\t\tX Y:", x, y)
         # use earlier pil_image to resize then reconvert and display
         self.tk_image = self.pil_image.resize((x, y), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
