@@ -210,7 +210,7 @@ class MainWindow:
         self.view_menu.add_command(
             label="Zoom to Window Height", command=self.zoom_to_height)
         self.view_menu.add_checkbutton(
-            label="Auto Zoom to Fit Window", variable=self.auto_zoom_var, command=self.auto_zoom)
+            label="Auto Zoom to Fit Window", variable=self.auto_zoom_var, command=self.load)
         self.view_menu.add_command(label="Reset Zoom", command=self.zoom_reset)
         self.view_menu.add_separator()
         self.view_menu.add_command(
@@ -447,7 +447,7 @@ class MainWindow:
             self.pil_image = PIL.Image.fromarray(self.cv2_image)
             # convert to tkinter format
             self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
-            self.image_dimensions(self.tk_image)
+            self.image_dimensions(self.tk_image, 'tk_image')
 
             self.refresh_image()
 
@@ -462,6 +462,8 @@ class MainWindow:
                 self.cv2_image, cv2.COLOR_BGR2RGB)
             # convert array to PIL format
             self.pil_image = PIL.Image.fromarray(self.cv2_image)
+
+            self.image_dimensions(self.pil_image, 'pil_image')
 
             print("Auto zoom is on:", self.auto_zoom_var.get())
             print("win size:", mainWindow.winfo_width(),
@@ -489,7 +491,7 @@ class MainWindow:
                 print("1-")
 
             # if both are horizontal
-            elif win_ratio > 1 and image_ratio > 1:
+            elif win_ratio >= 1 and image_ratio >= 1:
                 # same size
                 if win_ratio == image_ratio:
                     self.resize_image(w1, h1)
@@ -504,11 +506,11 @@ class MainWindow:
                 # then max of win ==> max of image
                 else:
                     self.resize_image(
-                        max_of_window, int(max_of_window * image_ratio))
+                        max_of_window, int(max_of_window / image_ratio))
                     print("2--3")
 
             # if both are vertical
-            elif win_ratio < 1 and image_ratio < 1:
+            elif win_ratio <= 1 and image_ratio <= 1:
                 # same size
                 if win_ratio == image_ratio:
                     self.resize_image(w1, h1)
@@ -523,18 +525,19 @@ class MainWindow:
                 # then min of win ==> min of image
                 else:
                     self.resize_image(
-                        min_of_window, int(min_of_window * image_ratio))
+                        min_of_window, int(min_of_window / image_ratio))
                     print("3--3")
 
+            # TODO fix this case
             # if win is vertical and image is horizontal
-            elif win_ratio < 1 and image_ratio > 1:
+            elif win_ratio <= 1 and image_ratio >= 1:
                 # max of image ==> min of window
                 self.resize_image(min_of_window, int(
-                    min_of_window * image_ratio))
+                    min_of_window / image_ratio))
                 print("4-")
 
             # if win is horizontal and image is verical
-            elif win_ratio > 1 and image_ratio < 1:
+            elif win_ratio >= 1 and image_ratio <= 1:
                 # min of window ==> max of image
                 self.resize_image(
                     int(min_of_window * image_ratio), min_of_window)
@@ -576,9 +579,11 @@ class MainWindow:
     def zoom_to_height(self):
         pass
 
-    def auto_zoom(self):
-        if self.auto_zoom_var.get() == 1:
-            self.load(event=None)
+    # def auto_zoom(self):
+    #     if self.auto_zoom_var.get() == 1:
+    #         self.load(event=None)
+    #     else:
+    #         pass
 
     def zoom_reset(self):
         pass
@@ -772,7 +777,7 @@ class MainWindow:
         # load image into canvas
         self.canvas.create_image(
             0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
-        self.image_dimensions(self.tk_image)
+        self.image_dimensions(self.tk_image, 'tk_image')
         self.canvas.config(
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
@@ -782,9 +787,13 @@ class MainWindow:
         # by the garbage collector
         self.tk_image.image = self.tk_image
 
-    def image_dimensions(self, image):
-        self.image_width = image.width()
-        self.image_height = image.height()
+    def image_dimensions(self, image, imgtype):
+        if imgtype == 'tk_image':
+            self.image_width = image.width()
+            self.image_height = image.height()
+        elif imgtype == 'pil_image':
+            self.image_width = image.width
+            self.image_height = image.height
 
     def help(self):
         pass
