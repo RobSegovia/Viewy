@@ -4,6 +4,7 @@ import PIL.Image
 import PIL.ImageTk
 import cv2
 import os
+import random
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
@@ -53,6 +54,7 @@ class MainWindow:
         self.total_images = None
 
         self.load_dir_bool = False
+        self.random_on = tkinter.IntVar()
 
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
@@ -124,7 +126,9 @@ class MainWindow:
                 7: "Flip the image horizontally",
                 8: "Rotate the image counter-clockwise",
                 9: "Rotate the image clockwise",
-                10: "Rotate the image by a custom amount"
+                10: "Rotate the image by a custom amount",
+                11: None,
+                12: "Randomize the order of the images"
             },
             2: {
                 0: "Undo the last action",
@@ -236,6 +240,9 @@ class MainWindow:
         self.image_menu.add_command(label="Median", command=self.median)
         self.image_menu.add_command(
             label="Upscale Image", command=self.upscale)
+        self.image_menu.add_separator()
+        self.image_menu.add_checkbutton(
+            label="Random Order of Images", variable=self.random_on, command=self.randomizer)
 
         self.window_menu.add_command(label="Minimize", command=self.min_window)
         self.window_menu.add_command(
@@ -287,8 +294,6 @@ class MainWindow:
     def status_update(self, event=None):
         self.submenu_sel = mainWindow.call(event.widget, 'index', 'active')
         if isinstance(self.menubar_sel, int) and isinstance(self.submenu_sel, int):
-            # print("\nMenu item:", self.menubar_sel-1)
-            # print("Current submenu item selected:", self.submenu_sel)
 
             # TODO may not need this condition anymore ??
             if self.menu_dict[self.menubar_sel-1][self.submenu_sel] is not None:
@@ -301,10 +306,17 @@ class MainWindow:
 
     # TODO: requires refactoring !!!!!!!
     def load_image(self, event=None):
+
         # poll window location before refreshing
         self.win_location()
 
+        # load one or more images
         if event is None and self.load_dir_bool is False:
+            # disable randomization at beginning
+            self.random_on.set(0)
+            self.total_images = 0
+            self.filenames_list.clear()
+
             try:
                 # returns tuple of image paths
                 self.filenames_string = tkinter.filedialog.askopenfilenames(title="Select one or more images",
@@ -317,15 +329,20 @@ class MainWindow:
                 self.image_index = 0
 
                 self.total_images = len(self.filenames_list)
+                assert self.total_images >= 1
 
+            except:
+                # raise
+                self.status_text.set("  No image loaded")
+
+            else:
                 if self.total_images == 1:
                     self.status_text.set("  Image was loaded successfully")
-                else:
+                elif self.total_images > 1:
                     self.info_text.set("{} of {} images  ".format(
                         self.image_index, self.total_images))
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_string)))
-
                 # enable menu items once an image is loaded
                 # NOTE: add_separator does not have a state!
                 self.file_menu.entryconfig(3, state='normal')
@@ -338,11 +355,13 @@ class MainWindow:
                 self.window_menu.entryconfig(12, state='normal')
                 self.window_menu.entryconfig(13, state='normal')
 
-            except:
-                raise
-                self.status_text.set("  No image loaded")
-
+        # load directory
         elif event is None and self.load_dir_bool is True:
+            # reset load dir boolean
+            self.load_dir_bool = False
+            # self.total_images = 0
+            # disable randomization at beginning
+            self.random_on.set(0)
             # reset filenames_list
             self.filenames_list.clear()
 
@@ -367,7 +386,13 @@ class MainWindow:
                     #     file_name[-4:] in string)]
 
                 self.total_images = len(self.filenames_list)
+                assert self.total_images >= 1
 
+            except:
+                # raise
+                self.status_text.set("  No directory loaded")
+
+            else:
                 if self.total_images == 1:
                     self.status_text.set("  Image was loaded successfully")
                 else:
@@ -375,7 +400,6 @@ class MainWindow:
                         self.image_index, self.total_images))
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_list)))
-
                 # TODO refactor this code to avoid repetition
                 # enable menu items once an image is loaded
                 # NOTE: add_separator does not have a state!
@@ -389,12 +413,8 @@ class MainWindow:
                 self.window_menu.entryconfig(12, state='normal')
                 self.window_menu.entryconfig(13, state='normal')
 
-            except:
-                # raise
-                self.status_text.set("  No image loaded")
-
-        else:
-            # if a key has been pressed, cycle to next/prev image
+        # if a key has been pressed, cycle to next/prev image
+        if event is not None:
             if event.keysym == 'Right' and self.image_index < len(self.filenames_list) - 1:
                 self.image_index += 1
             elif event.keysym == 'Left' and self.image_index > 0:
@@ -416,7 +436,7 @@ class MainWindow:
         # poll window location after window was refreshed
         self.win_location()
 
-        if self.total_images > 1:
+        if self.total_images >= 1:
             self.info_text.set("Image {} of {}  ".format(
                 self.image_index+1, self.total_images))
 
@@ -508,6 +528,17 @@ class MainWindow:
 
     def upscale(self):
         pass
+
+    # disable randomizer until image is loaded
+    def randomizer(self):
+        if self.random_on.get() == 1:
+            # if random is ON then make a copy of the original order
+            # so that it can be reverted when turned off
+            self.filenames_list_backup = self.filenames_list.copy()
+            random.shuffle(self.filenames_list)
+        else:
+            # restore original order
+            self.filenames_list = self.filenames_list_backup.copy()
 
     @staticmethod
     def min_window():
