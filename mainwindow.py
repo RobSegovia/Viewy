@@ -4,6 +4,7 @@ import PIL.Image
 import PIL.ImageTk
 import cv2
 import os
+import psutil
 import random
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
@@ -58,7 +59,9 @@ class MainWindow:
         self.load_image_var = tkinter.IntVar()
         self.load_dir_var = tkinter.IntVar()
         self.random_on = tkinter.IntVar()
-        self.auto_zoom_var = tkinter.IntVar()
+        self.zoom_auto_var = tkinter.IntVar()
+        self.zoom_width_var = tkinter.IntVar()
+        self.zoom_height_var = tkinter.IntVar()
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -70,6 +73,7 @@ class MainWindow:
                                                  self.win_y_offset))
         mainWindow.configure()
         mainWindow.bind('<Key>', self.load)
+        mainWindow.bind('<MouseWheel>', self.zoom_in)
 
         self.win_location()  # TODO del ???
 
@@ -210,12 +214,12 @@ class MainWindow:
 
         self.view_menu.add_command(label="Zoom In", command=self.zoom_in)
         self.view_menu.add_command(label="Zoom Out", command=self.zoom_out)
-        self.view_menu.add_command(
-            label="Zoom to Window Width", command=self.zoom_to_width)
-        self.view_menu.add_command(
-            label="Zoom to Window Height", command=self.zoom_to_height)
         self.view_menu.add_checkbutton(
-            label="Auto Zoom to Fit Window", variable=self.auto_zoom_var, command=self.load)
+            label="Zoom to Window Width", variable=self.zoom_width_var, command=self.zoom_to_width)
+        self.view_menu.add_checkbutton(
+            label="Zoom to Window Height", variable=self.zoom_height_var, command=self.zoom_to_height)
+        self.view_menu.add_checkbutton(
+            label="Auto Zoom to Fit Window", variable=self.zoom_auto_var, command=self.zoom_auto)
         self.view_menu.add_command(label="Reset Zoom", command=self.zoom_reset)
         self.view_menu.add_separator()
         self.view_menu.add_command(
@@ -449,7 +453,7 @@ class MainWindow:
             elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
-        if self.auto_zoom_var.get() == 0:
+        if self.zoom_auto_var.get() == 0:
             # print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
@@ -466,7 +470,7 @@ class MainWindow:
             self.refresh_image()
 
         # AUTO ZOOM is ON
-        if self.auto_zoom_var.get() == 1:
+        if self.zoom_auto_var.get() == 1:
             # NOTE image needs to load after key event
             # before it can be resized...
             # load the image into CV2 array
@@ -479,7 +483,7 @@ class MainWindow:
 
             self.image_dimensions(self.pil_image, 'pil_image')
 
-            # print("Auto zoom is on:", self.auto_zoom_var.get())
+            # print("Auto zoom is on:", self.zoom_auto_var.get())
             # print("win size:", mainWindow.winfo_width(),
             #       mainWindow.winfo_height())
             # print("image size:", self.image_width, self.image_height)
@@ -560,10 +564,20 @@ class MainWindow:
             print("Reached end of Zoom in load_image ")
             print()
 
+        if self.zoom_width_var.get() == 1:
+            ratio = self.original_image_width/self.original_image_height
+            width = mainWindow.winfo_width()-21
+            self.resize_image(width, int(width / ratio))
+
+        elif self.zoom_height_var.get() == 1:
+            ratio = self.original_image_width/self.original_image_height
+            height = mainWindow.winfo_height()-42
+            self.resize_image(int(height * ratio), height)
+
         # poll window location after window was refreshed
         self.win_location()
 
-        if self.auto_zoom_var.get() == 0:
+        if self.zoom_auto_var.get() == 0:
             self.zoom_value = 100
             self.zoom_text.set("Zoom: {}%".format(self.zoom_value))
         if self.total_images >= 1:
@@ -582,48 +596,58 @@ class MainWindow:
     def load_session(self):
         pass
 
-    def zoom_in(self):
-        # if self.image_width < self.original_image_width * 4:
-        if self.zoom_index < 7:
-            self.zoom_index += 1
-            print("Zoom index:", self.zoom_index)
-            factor = self.zoom_factor[self.zoom_index]
-            print("Factor:", factor)
-            self.resize_image(int(self.original_image_width * factor),
-                              int(self.original_image_height * factor))
-            print("Zoom value:", self.zoom_value)
-            self.zoom_value += 25
-            print("Zoom value:", self.zoom_value)
-            print()
-            self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
-        else:
-            pass
+    def zoom_in(self, event=None):
+        # print("Find image:", self.canvas.find_withtag('image')[0])
+        try:
+            if (self.zoom_index < 7) and (event.delta > 0):
+                self.zoom_index += 1
+                # print("Zoom index:", self.zoom_index)
+                factor = self.zoom_factor[self.zoom_index]
+                # print("Factor:", factor)
+                self.resize_image(int(self.original_image_width * factor),
+                                  int(self.original_image_height * factor))
+                # print("Zoom value:", self.zoom_value)
+                self.zoom_value += 25
+                # print("Zoom value:", self.zoom_value)
+                # print()
+                self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
+            elif event.delta < 0:
+                self.zoom_out(event)
+        except:
+            print("-> No image loaded yet to zoom into")
 
-    def zoom_out(self):
-        # if self.image_width > self.original_image_width / 4:
+    def zoom_out(self, event=None):
         if self.zoom_index > 0:
             self.zoom_index -= 1
-            print("Zoom index:", self.zoom_index)
+            # print("Zoom index:", self.zoom_index)
             factor = self.zoom_factor[self.zoom_index]
-            print("Factor:", factor)
+            # print("Factor:", factor)
             self.resize_image(int(self.original_image_width * factor),
                               int(self.original_image_height * factor))
-            print("Zoom value:", self.zoom_value)
+            # print("Zoom value:", self.zoom_value)
             self.zoom_value -= 25
-            print("Zoom value:", self.zoom_value)
-            print()
+            # print("Zoom value:", self.zoom_value)
+            # print()
             self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
-        else:
-            pass
 
     def zoom_to_width(self):
-        pass
+        self.zoom_height_var.set(0)
+        self.zoom_auto_var.set(0)
+        self.load()
 
     def zoom_to_height(self):
-        pass
+        self.zoom_width_var.set(0)
+        self.zoom_auto_var.set(0)
+        self.load()
+
+    def zoom_auto(self):
+        self.zoom_width_var.set(0)
+        self.zoom_height_var.set(0)
+        self.load()
 
     def zoom_reset(self):
-        pass
+        self.resize_image(self.original_image_width,
+                          self.original_image_height)
 
     def flip_vert(self):
         pass
@@ -661,7 +685,7 @@ class MainWindow:
 
     def resize_image(self, x=200, y=200):
         # print("\t--inside resize_image")
-        print("\t--X Y:", x, y, "New Img Ratio:", x/y)
+        # print("\t--X Y:", x, y, "New Img Ratio:", x/y)
         # use earlier pil_image to resize then reconvert and display
         self.tk_image = self.pil_image.resize((x, y), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
@@ -693,11 +717,11 @@ class MainWindow:
             # restore original order
             self.filenames_list = self.filenames_list_backup.copy()
 
-    @staticmethod
+    @ staticmethod
     def min_window():
         mainWindow.wm_state('icon')
 
-    @staticmethod
+    @ staticmethod
     def restore_window():
         mainWindow.wm_state('normal')
 
@@ -719,7 +743,7 @@ class MainWindow:
         mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
                                                  self.win_height, self.win_x_offset, self.win_y_offset))
 
-    @staticmethod
+    @ staticmethod
     def max_window():
         mainWindow.wm_state('zoomed')
 
@@ -811,12 +835,6 @@ class MainWindow:
         # delete any previous image before refreshing
         self.canvas.delete("image")
 
-        # print("Canvas width:", self.canvas.winfo_width(),
-        #       mainWindow.winfo_width())
-
-        # load image into canvas
-        # self.canvas.create_image(
-        #     0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
         self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
             self.canvas.winfo_height()/2), anchor='center', image=self.tk_image, tag="image")
         self.image_dimensions(self.tk_image, 'tk_image')
@@ -828,6 +846,14 @@ class MainWindow:
         # store a reference to the image so it won't be deleted
         # by the garbage collector
         self.tk_image.image = self.tk_image
+
+        # Check MEMORY Usage
+        # pid = os.getpid()
+        # print(pid)
+        # ps = psutil.Process(pid)
+        # memory_use = ps.memory_info()
+        # print(memory_use)
+        # print()
 
     def image_dimensions(self, image, imgtype):
         if imgtype == 'tk_image':
