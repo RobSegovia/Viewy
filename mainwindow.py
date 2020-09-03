@@ -494,19 +494,19 @@ class MainWindow:
             elif win_ratio >= 1 and image_ratio >= 1:
                 # same size
                 if win_ratio == image_ratio:
-                    self.resize_image(w1, h1)
+                    self.resize_image(w1-42, h1-42)
                     print("2--1")
                 # if window ratio is wider than image ratio
                 # then min of win ==> min of image
                 elif win_ratio > image_ratio:
                     self.resize_image(
-                        int(min_of_window * image_ratio), min_of_window)
+                        int(min_of_window * image_ratio)-int(42*image_ratio), min_of_window-42)
                     print("2--2")
                 # if window ratio is less wide than image ratio
                 # then max of win ==> max of image
                 else:
                     self.resize_image(
-                        max_of_window, int(max_of_window / image_ratio))
+                        max_of_window-21, int(max_of_window / image_ratio)-int(21/image_ratio))
                     print("2--3")
 
             # if both are vertical
@@ -519,28 +519,28 @@ class MainWindow:
                 # then max of win ==> max of image
                 elif win_ratio > image_ratio:
                     self.resize_image(
-                        int(max_of_window * image_ratio), max_of_window)
+                        int(max_of_window * image_ratio)-int(42*image_ratio), max_of_window-42)
                     print("3--2")
                 # if window ratio is less(taller) than image ratio
                 # then min of win ==> min of image
                 else:
                     self.resize_image(
-                        min_of_window, int(min_of_window / image_ratio))
+                        min_of_window-21, int(min_of_window / image_ratio)-int(21/image_ratio))
                     print("3--3")
 
             # TODO fix this case
             # if win is vertical and image is horizontal
             elif win_ratio <= 1 and image_ratio >= 1:
                 # max of image ==> min of window
-                self.resize_image(min_of_window, int(
-                    min_of_window / image_ratio))
+                self.resize_image(min_of_window-21, int(
+                    min_of_window / image_ratio)-int(21/image_ratio))
                 print("4-")
 
             # if win is horizontal and image is verical
             elif win_ratio >= 1 and image_ratio <= 1:
                 # min of window ==> max of image
                 self.resize_image(
-                    int(min_of_window * image_ratio), min_of_window)
+                    int(min_of_window * image_ratio)-int(42*image_ratio), min_of_window-42)
                 print("5-")
 
             print("Reached end of Zoom in load_image ")
@@ -578,12 +578,6 @@ class MainWindow:
 
     def zoom_to_height(self):
         pass
-
-    # def auto_zoom(self):
-    #     if self.auto_zoom_var.get() == 1:
-    #         self.load(event=None)
-    #     else:
-    #         pass
 
     def zoom_reset(self):
         pass
@@ -624,7 +618,7 @@ class MainWindow:
 
     def resize_image(self, x=200, y=200):
         print("\t--inside resize_image")
-        print("\t--X Y:", x, y)
+        print("\t--X Y:", x, y, "New Img Ratio:", x/y)
         # use earlier pil_image to resize then reconvert and display
         self.tk_image = self.pil_image.resize((x, y), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
