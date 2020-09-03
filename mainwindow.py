@@ -768,9 +768,13 @@ class MainWindow:
         # delete any previous image before refreshing
         self.canvas.delete("image")
 
+        print("Canvas width:", self.canvas.winfo_width(),
+              mainWindow.winfo_width())
         # load image into canvas
-        self.canvas.create_image(
-            0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
+        # self.canvas.create_image(
+        #     0, 0, anchor=tkinter.NW, image=self.tk_image, tag="image")
+        self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
+            self.canvas.winfo_height()/2), anchor='center', image=self.tk_image, tag="image")
         self.image_dimensions(self.tk_image, 'tk_image')
         self.canvas.config(
             yscrollcommand=self.vert_scrollbar.set,
