@@ -55,6 +55,7 @@ class MainWindow:
         self.filenames_string = None
         self.filenames_list = []
         self.total_images = None
+        self.image_exists = False
 
         self.load_image_var = tkinter.IntVar()
         self.load_dir_var = tkinter.IntVar()
@@ -83,9 +84,9 @@ class MainWindow:
 
         self.image_frame = tkinter.Frame(
             mainWindow)
-        self.image_frame.pack(fill=tkinter.BOTH, expand=True)
+        self.image_frame.pla(fill=tkinter.BOTH, expand=True)
         self.canvas = tkinter.Canvas(
-            self.image_frame, bg='black')
+            self.image_frame, bg='black', relief='groove', bd=10)
 
         # Create Scrollbars
         self.vert_scrollbar = tkinter.Scrollbar(
@@ -359,6 +360,7 @@ class MainWindow:
 
                 self.total_images = len(self.filenames_list)
                 assert self.total_images >= 1
+                self.image_exists = True
 
             except:
                 # raise
@@ -418,6 +420,7 @@ class MainWindow:
 
                 self.total_images = len(self.filenames_list)
                 assert self.total_images >= 1
+                self.image_exists = True
 
             except:
                 # raise
@@ -453,7 +456,7 @@ class MainWindow:
             elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
-        if self.zoom_auto_var.get() == 0:
+        if self.image_exists and self.zoom_auto_var.get() == 0:
             # print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
@@ -465,8 +468,9 @@ class MainWindow:
             # convert to tkinter format
             self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
             self.image_dimensions(self.tk_image, 'tk_image')
-            self.original_image_width, self.original_image_height = self.image_width, self.image_height
 
+            # store original dimensions of image
+            self.original_image_width, self.original_image_height = self.image_width, self.image_height
             self.refresh_image()
 
         # AUTO ZOOM is ON
@@ -506,45 +510,45 @@ class MainWindow:
             # if ratios = same, resize both w and h to same size as window w and h
             if win_ratio == 1 and image_ratio == 1:
                 self.resize_image(w1, h1)
-                print("1-")
+                # print("1-")
 
             # if both are horizontal
             elif win_ratio >= 1 and image_ratio >= 1:
                 # same size
                 if win_ratio == image_ratio:
                     self.resize_image(w1-42, h1-42)
-                    print("2--1")
+                    # print("2--1")
                 # if window ratio is wider than image ratio
                 # then min of win ==> min of image
                 elif win_ratio > image_ratio:
                     self.resize_image(
                         int(min_of_window * image_ratio)-int(42*image_ratio), min_of_window-42)
-                    print("2--2")
+                    # print("2--2")
                 # if window ratio is less wide than image ratio
                 # then max of win ==> max of image
                 else:
                     self.resize_image(
                         max_of_window-21, int(max_of_window / image_ratio)-int(21/image_ratio))
-                    print("2--3")
+                    # print("2--3")
 
             # if both are vertical
             elif win_ratio <= 1 and image_ratio <= 1:
                 # same size
                 if win_ratio == image_ratio:
                     self.resize_image(w1, h1)
-                    print("3--1")
+                    # print("3--1")
                 # if window ratio is more(shorter) than image ratio
                 # then max of win ==> max of image
                 elif win_ratio > image_ratio:
                     self.resize_image(
                         int(max_of_window * image_ratio)-int(42*image_ratio), max_of_window-42)
-                    print("3--2")
+                    # print("3--2")
                 # if window ratio is less(taller) than image ratio
                 # then min of win ==> min of image
                 else:
                     self.resize_image(
                         min_of_window-21, int(min_of_window / image_ratio)-int(21/image_ratio))
-                    print("3--3")
+                    # print("3--3")
 
             # TODO fix this case
             # if win is vertical and image is horizontal
@@ -552,17 +556,17 @@ class MainWindow:
                 # max of image ==> min of window
                 self.resize_image(min_of_window-21, int(
                     min_of_window / image_ratio)-int(21/image_ratio))
-                print("4-")
+                # print("4-")
 
             # if win is horizontal and image is verical
             elif win_ratio >= 1 and image_ratio <= 1:
                 # min of window ==> max of image
                 self.resize_image(
                     int(min_of_window * image_ratio)-int(42*image_ratio), min_of_window-42)
-                print("5-")
+                # print("5-")
 
-            print("Reached end of Zoom in load_image ")
-            print()
+            # print("Reached end of Zoom in load_image ")
+            # print()
 
         if self.zoom_width_var.get() == 1:
             ratio = self.original_image_width/self.original_image_height
@@ -577,12 +581,13 @@ class MainWindow:
         # poll window location after window was refreshed
         self.win_location()
 
-        if self.zoom_auto_var.get() == 0:
-            self.zoom_value = 100
-            self.zoom_text.set("Zoom: {}%".format(self.zoom_value))
-        if self.total_images >= 1:
-            self.info_text.set("Image {} of {}  ".format(
-                self.image_index+1, self.total_images))
+        if self.image_exists:
+            if self.zoom_auto_var.get() == 0:
+                self.zoom_value = 100
+                self.zoom_text.set("Zoom: {}%".format(self.zoom_value))
+            if self.total_images >= 1:
+                self.info_text.set("Image {} of {}  ".format(
+                    self.image_index+1, self.total_images))
 
     def new_session(self):
         # this will require a pop-up window with options
@@ -598,7 +603,8 @@ class MainWindow:
 
     def zoom_in(self, event=None):
         # print("Find image:", self.canvas.find_withtag('image')[0])
-        try:
+        # try:
+        if self.image_exists:
             if (self.zoom_index < 7) and (event.delta > 0):
                 self.zoom_index += 1
                 # print("Zoom index:", self.zoom_index)
@@ -613,8 +619,8 @@ class MainWindow:
                 self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
             elif event.delta < 0:
                 self.zoom_out(event)
-        except:
-            print("-> No image loaded yet to zoom into")
+        # except:
+        #     print("-> No image loaded yet to zoom into")
 
     def zoom_out(self, event=None):
         if self.zoom_index > 0:
@@ -732,6 +738,8 @@ class MainWindow:
         self.win_width = self.screen_width-8
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
                                                  mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
+        if self.image_exists:
+            self.refresh_image()
 
     def fit_screen_height(self):
         self.win_location()
@@ -742,6 +750,8 @@ class MainWindow:
         print("Screen height:", self.screen_height)
         mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
                                                  self.win_height, self.win_x_offset, self.win_y_offset))
+        if self.image_exists:
+            self.refresh_image()
 
     @ staticmethod
     def max_window():
@@ -749,7 +759,8 @@ class MainWindow:
 
     def lock_aspect(self):
         # if there's no image loaded
-        if not [item for item in self.canvas.find_all()]:
+        # if not [item for item in self.canvas.find_all()]:
+        if not self.image_exists:
             if self.aspect_locked.get() == 1:
                 mainWindow.resizable(False, False)
                 self.window_menu.entryconfig(1, state='disabled')
@@ -831,17 +842,34 @@ class MainWindow:
     def hide_sidebar(self):
         pass
 
+    # TODO there may be a logic bug in here that prevents the image from centering
     def refresh_image(self):
+        # print("Req height of canvas:", self.canvas.winfo_reqheight())
         # delete any previous image before refreshing
         self.canvas.delete("image")
+        # self.canvas.update_idletasks()
+        # print()
+        # # print("Window w:", mainWindow.winfo_width())
+        # print("Window h:", mainWindow.winfo_height())
+        print("pre Canvas width:", self.canvas.winfo_width())
+        print("pre Canvas height:", self.canvas.winfo_height())
 
-        self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
+        # returns item ID
+        image_id = self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
             self.canvas.winfo_height()/2), anchor='center', image=self.tk_image, tag="image")
         self.image_dimensions(self.tk_image, 'tk_image')
         self.canvas.config(
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
             scrollregion=self.canvas.bbox('all'))
+
+        # # print("Image pos:", image_id)
+        print("after Canvas width:", self.canvas.winfo_width())
+        print("virt x:", self.canvas.winfo_rootx())
+        print("after Canvas height:", self.canvas.winfo_height())
+        print("Img coords:", self.canvas.coords(image_id))
+        print("Bbox:", self.canvas.bbox(image_id))
+        print()
 
         # store a reference to the image so it won't be deleted
         # by the garbage collector
