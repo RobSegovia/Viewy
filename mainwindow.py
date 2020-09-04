@@ -860,12 +860,29 @@ class MainWindow:
         print("event.x:", event.x, "event.y:", event.y)
         print("windowX:", mainWindow.winfo_width(),
               "windowY:", mainWindow.winfo_height())
-        # moveto_x = 1-(event.x / (mainWindow.winfo_width()-8))
-        # moveto_y = 1-(event.y / (mainWindow.winfo_height()-42))
-        moveto_x = event.x / (self.image_width-mainWindow.winfo_width()-8)
-        moveto_y = event.y / (self.image_height-mainWindow.winfo_height()-51)
-        event.widget.xview_moveto(moveto_x)
-        event.widget.yview_moveto(moveto_y)
+        print("Hor pos:", self.horz_scrollbar.get())
+        print("Ver pos:", self.vert_scrollbar.get())
+
+        # moveto_x = event.x / (self.image_width - mainWindow.winfo_width())
+        # moveto_y = event.y / (self.image_height - mainWindow.winfo_height())
+
+        # % of screen that can be scrolled 1:1
+        scroll_length_p = self.horz_scrollbar.get(
+        )[1] - self.horz_scrollbar.get()[0]
+        # pixels that can be scrolled 1:1
+        pixel_amt = scroll_length_p * mainWindow.winfo_width()
+        # image division factor...how many scroll screens to get across image
+        img_divs = self.image_width / pixel_amt
+
+        # moveto_x = self.horz_scrollbar.get()[0] * event.x/mainWindow.winfo_width()
+        # moveto_y = self.vert_scrollbar.get()[0] * event.y/mainWindow.winfo_height()
+
+        # sort of works:
+        moveto_x = ((event.x / (mainWindow.winfo_width()-8)) / img_divs)
+        moveto_y = ((event.y / (mainWindow.winfo_height()-51)) / img_divs)
+
+        event.widget.xview_moveto(moveto_x + self.horz_scrollbar.get()[0])
+        event.widget.yview_moveto(moveto_y + self.vert_scrollbar.get()[0])
 
         # self.move_x = event.x
         # self.move_y = event.y
