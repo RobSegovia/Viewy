@@ -84,9 +84,10 @@ class MainWindow:
 
         self.image_frame = tkinter.Frame(
             mainWindow)
-        self.image_frame.pla(fill=tkinter.BOTH, expand=True)
+        self.image_frame.pack(fill=tkinter.BOTH, expand=True)
         self.canvas = tkinter.Canvas(
-            self.image_frame, bg='black', relief='groove', bd=10)
+            self.image_frame, bg='black')
+        self.canvas.bind('<Configure>', self.refresh_image)
 
         # Create Scrollbars
         self.vert_scrollbar = tkinter.Scrollbar(
@@ -738,8 +739,8 @@ class MainWindow:
         self.win_width = self.screen_width-8
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
                                                  mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
-        if self.image_exists:
-            self.refresh_image()
+        # if self.image_exists:
+        #     self.refresh_image()
 
     def fit_screen_height(self):
         self.win_location()
@@ -750,8 +751,8 @@ class MainWindow:
         print("Screen height:", self.screen_height)
         mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
                                                  self.win_height, self.win_x_offset, self.win_y_offset))
-        if self.image_exists:
-            self.refresh_image()
+        # if self.image_exists:
+        #     self.refresh_image()
 
     @ staticmethod
     def max_window():
@@ -842,17 +843,19 @@ class MainWindow:
     def hide_sidebar(self):
         pass
 
-    # TODO there may be a logic bug in here that prevents the image from centering
-    def refresh_image(self):
-        # print("Req height of canvas:", self.canvas.winfo_reqheight())
-        # delete any previous image before refreshing
-        self.canvas.delete("image")
-        # self.canvas.update_idletasks()
-        # print()
-        # # print("Window w:", mainWindow.winfo_width())
-        # print("Window h:", mainWindow.winfo_height())
-        print("pre Canvas width:", self.canvas.winfo_width())
-        print("pre Canvas height:", self.canvas.winfo_height())
+    def refresh_image(self, event=None):
+        # delete any previous items on canvas before refreshing
+        self.canvas.delete('all')
+        # creates a dummy rectangle roughly the same size as the canvas that
+        # resets the ANCHOR value for centering the image.
+        # Without it the image may not re-center properly when the window is resized
+        if event is not None:
+            w, h = event.width, event.height
+            # offsets - 3 seems to center image on sides
+            # 20 is good for medium images, 0 is perfect for small images...
+            xy = 3, 0, w, h
+            dummy_rect = self.canvas.create_rectangle(xy)
+            self.canvas.itemconfig(dummy_rect, width=0)
 
         # returns item ID
         image_id = self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
@@ -863,17 +866,10 @@ class MainWindow:
             xscrollcommand=self.horz_scrollbar.set,
             scrollregion=self.canvas.bbox('all'))
 
-        # # print("Image pos:", image_id)
-        print("after Canvas width:", self.canvas.winfo_width())
-        print("virt x:", self.canvas.winfo_rootx())
-        print("after Canvas height:", self.canvas.winfo_height())
-        print("Img coords:", self.canvas.coords(image_id))
-        print("Bbox:", self.canvas.bbox(image_id))
-        print()
-
         # store a reference to the image so it won't be deleted
         # by the garbage collector
-        self.tk_image.image = self.tk_image
+        if self.image_exists:
+            self.tk_image.image = self.tk_image
 
         # Check MEMORY Usage
         # pid = os.getpid()
@@ -884,12 +880,13 @@ class MainWindow:
         # print()
 
     def image_dimensions(self, image, imgtype):
-        if imgtype == 'tk_image':
-            self.image_width = image.width()
-            self.image_height = image.height()
-        elif imgtype == 'pil_image':
-            self.image_width = image.width
-            self.image_height = image.height
+        if self.image_exists:
+            if imgtype == 'tk_image':
+                self.image_width = image.width()
+                self.image_height = image.height()
+            elif imgtype == 'pil_image':
+                self.image_width = image.width
+                self.image_height = image.height
 
     def help(self):
         pass
