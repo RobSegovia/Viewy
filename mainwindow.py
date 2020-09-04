@@ -64,6 +64,9 @@ class MainWindow:
         self.zoom_width_var = tkinter.IntVar()
         self.zoom_height_var = tkinter.IntVar()
 
+        self.prev_x = 0
+        self.prev_y = 0
+
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
 
@@ -88,6 +91,7 @@ class MainWindow:
         self.canvas = tkinter.Canvas(
             self.image_frame, bg='black')
         self.canvas.bind('<Configure>', self.refresh_image)
+        self.canvas.bind('<B1-Motion>', self.drag_image)
 
         # Create Scrollbars
         self.vert_scrollbar = tkinter.Scrollbar(
@@ -843,6 +847,44 @@ class MainWindow:
     def hide_sidebar(self):
         pass
 
+    def drag_image(self, event=None):
+        # if self.image_exists:
+
+        #     self.canvas.delete(self.dummy_rect)
+
+        # if event is not None:
+        # w, h = event.width, event.height
+        # xy = 3, 0, w, h
+        # self.dummy_rect = self.canvas.create_rectangle(xy)
+        # self.canvas.itemconfig(self.dummy_rect, width=0)
+        print("event.x:", event.x, "event.y:", event.y)
+        print("windowX:", mainWindow.winfo_width(),
+              "windowY:", mainWindow.winfo_height())
+        # moveto_x = 1-(event.x / (mainWindow.winfo_width()-8))
+        # moveto_y = 1-(event.y / (mainWindow.winfo_height()-42))
+        moveto_x = event.x / (self.image_width-mainWindow.winfo_width()-8)
+        moveto_y = event.y / (self.image_height-mainWindow.winfo_height()-51)
+        event.widget.xview_moveto(moveto_x)
+        event.widget.yview_moveto(moveto_y)
+
+        # self.move_x = event.x
+        # self.move_y = event.y
+        # dir_x = self.move_x - self.prev_x
+        # dir_y = self.move_y - self.prev_y
+        # if dir_x > 0:
+        #     event.widget.xview_scroll(1, 'units')
+        # elif dir_x < 0:
+        #     event.widget.xview_scroll(-1, 'units')
+        # if dir_y > 0:
+        #     event.widget.yview_scroll(1, 'units')
+        # elif dir_y < 0:
+        #     event.widget.yview_scroll(-1, 'units')
+        # self.prev_x = event.x
+        # self.prev_y = event.y
+
+        print("move X: {:.2f} move Y: {:.2f}".format(moveto_x, moveto_y))
+        print()
+
     def refresh_image(self, event=None):
         # delete any previous items on canvas before refreshing
         self.canvas.delete('all')
@@ -854,8 +896,8 @@ class MainWindow:
             # offsets - 3 seems to center image on sides
             # 20 is good for medium images, 0 is perfect for small images...
             xy = 3, 0, w, h
-            dummy_rect = self.canvas.create_rectangle(xy)
-            self.canvas.itemconfig(dummy_rect, width=0)
+            self.dummy_rect = self.canvas.create_rectangle(xy)
+            self.canvas.itemconfig(self.dummy_rect, width=0)
 
         # returns item ID
         image_id = self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
