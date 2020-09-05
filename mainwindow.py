@@ -69,8 +69,8 @@ class MainWindow:
 
         self.prev_px = None
         self.prev_py = None
-        self.now_posx = 0
-        self.now_posy = 0
+        self.new_posx = 0
+        self.new_posy = 0
         self.initial_scroll_posx = True
         self.initial_scroll_posy = True
         self.img_pxx_percent = 0
@@ -882,8 +882,8 @@ class MainWindow:
             # image was just loaded and at initial scroll pos
             if self.initial_scroll_pos:
                 # left side of scrollbar
-                self.now_posx = self.horz_scrollbar.get()[0]
-                self.now_posy = self.vert_scrollbar.get()[0]
+                self.new_posx = self.horz_scrollbar.get()[0]
+                self.new_posy = self.vert_scrollbar.get()[0]
                 # print("Scroll initial pos:", self.now_pos)
                 self.now_px = event.x
                 self.now_py = event.y
@@ -900,10 +900,9 @@ class MainWindow:
             elif self.b1_released == False and (self.prev_px is not None) and (self.prev_py is not None):
                 self.now_px = event.x
                 self.now_py = event.y
-                # print("prev px:", self.prev_px)
                 self.diffx = self.now_px - self.prev_px
                 self.diffy = self.now_py - self.prev_py
-                # print("Diff: ", self.diff)
+                # print("prev px:", self.prev_px, "Diff: ", self.diffx)
                 self.prev_px = self.now_px
                 self.prev_py = self.now_py
 
@@ -913,31 +912,36 @@ class MainWindow:
                     1 / self.image_width) * abs(self.diffx)
                 self.img_pxy_percent = (
                     1 / self.image_height) * abs(self.diffy)
-                # print("img px % {:.3f}".format(self.img_px_percent))
+                # print("img px % {:.5f}".format(self.img_pxx_percent))
 
                 # move right or left and reach limits
-                if self.diffx > 0 and self.horz_scrollbar.get()[1] < 1:
-                    self.now_posx = self.now_posx - self.img_pxx_percent
-                elif self.diffx < 0 and self.horz_scrollbar.get()[0] > 0:
-                    self.now_posx = self.now_posx + self.img_pxx_percent
+                if self.diffx > 0 and self.horz_scrollbar.get()[1] <= 1:
+                    self.new_posx = self.new_posx - self.img_pxx_percent
+                    # print("Right ->")
+                elif self.diffx < 0 and self.horz_scrollbar.get()[0] >= 0:
+                    self.new_posx = self.new_posx + self.img_pxx_percent
+                    # print("<- Left")
 
-                if self.diffy > 0 and self.vert_scrollbar.get()[1] < 1:
-                    self.now_posy = self.now_posy - self.img_pxy_percent
-                elif self.diffy < 0 and self.vert_scrollbar.get()[0] > 0:
-                    self.now_posy = self.now_posy + self.img_pxy_percent
+                if self.diffy > 0 and self.vert_scrollbar.get()[1] <= 1:
+                    self.new_posy = self.new_posy - self.img_pxy_percent
+                elif self.diffy < 0 and self.vert_scrollbar.get()[0] >= 0:
+                    self.new_posy = self.new_posy + self.img_pxy_percent
 
-                if self.now_posx > 1:
-                    self.now_posx = 1
-                if self.now_posx < 0:
-                    self.now_posx = 0
+                # print("new pos X:", self.new_posx)
+                # print("now pos Y:", self.new_posy)
 
-                if self.now_posy > 1:
-                    self.now_posy = 1
-                if self.now_posy < 0:
-                    self.now_posy = 0
+                if self.new_posx > 1:
+                    self.new_posx = 1
+                if self.new_posx < 0:
+                    self.new_posx = 0
 
-                event.widget.xview_moveto(self.now_posx)
-                event.widget.yview_moveto(self.now_posy)
+                if self.new_posy > 1:
+                    self.new_posy = 1
+                if self.new_posy < 0:
+                    self.new_posy = 0
+
+                event.widget.xview_moveto(self.new_posx)
+                event.widget.yview_moveto(self.new_posy)
                 # print("now_pos: {:.5f}".format(self.now_pos))
 
     def refresh_image(self, event=None):
