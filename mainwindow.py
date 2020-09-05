@@ -67,6 +67,13 @@ class MainWindow:
         self.prev_x = 0
         self.prev_y = 0
 
+        self.prev_px = None
+        self.now_pos = 0
+        self.initial_scroll_pos = True
+        self.img_px_percent = 0
+        self.diff = 0
+        self.b1_released = False
+
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
 
@@ -92,6 +99,7 @@ class MainWindow:
             self.image_frame, bg='black')
         self.canvas.bind('<Configure>', self.refresh_image)
         self.canvas.bind('<B1-Motion>', self.drag_image)
+        self.canvas.bind('<ButtonRelease-1>', self.b1_release)
 
         # Create Scrollbars
         self.vert_scrollbar = tkinter.Scrollbar(
@@ -847,6 +855,10 @@ class MainWindow:
     def hide_sidebar(self):
         pass
 
+    def b1_release(self, event):
+        self.b1_released = True
+        print("\t\t\t\t\t\tB1 released")
+
     def drag_image(self, event=None):
         # if self.image_exists:
 
@@ -857,32 +869,91 @@ class MainWindow:
         # xy = 3, 0, w, h
         # self.dummy_rect = self.canvas.create_rectangle(xy)
         # self.canvas.itemconfig(self.dummy_rect, width=0)
-        print("event.x:", event.x, "event.y:", event.y)
-        print("windowX:", mainWindow.winfo_width(),
-              "windowY:", mainWindow.winfo_height())
-        print("Hor pos:", self.horz_scrollbar.get())
-        print("Ver pos:", self.vert_scrollbar.get())
+
+        if self.image_exists:
+
+            # print("event.x:", event.x, "event.y:", event.y)
+            # print("windowX:", mainWindow.winfo_width(),
+            #       "windowY:", mainWindow.winfo_height())
+            # print("Hor pos:", self.horz_scrollbar.get())
+            # print("Ver pos:", self.vert_scrollbar.get())
+
+            # image was just loaded and at initial scroll pos
+            if self.initial_scroll_pos:
+                # get mid pos of scrollbar
+                # self.now_pos = ((self.horz_scrollbar.get()[
+                #                 1] - self.horz_scrollbar.get()[0]) / 2) + self.horz_scrollbar.get()[0]
+                self.now_pos = self.horz_scrollbar.get()[0]
+                print("Scroll initial pos:", self.now_pos)
+                self.now_px = event.x
+                self.initial_scroll_pos = False
+
+            # # gives ratio of one pixel of image
+            # # used to scroll 1:1
+            # img_px_percent = 1 / self.image_width
+            # self.diff = 0
+
+            # if mouse button was released previously
+            if self.prev_px == None:
+                self.prev_px = self.now_px
+                self.b1_released = False
+            elif self.b1_released:
+                self.prev_px = None
+            elif self.b1_released == False:
+                self.now_px = event.x
+                self.diff = self.now_px - self.prev_px
+                print("Diff: ", self.diff)
+                self.prev_px = self.now_px
+
+                # gives ratio of one pixel of image
+                # used to scroll 1:mouse speed
+                self.img_px_percent = (
+                    1 / self.image_width) * abs(self.diff)
+                print("img px % {:.3f}".format(self.img_px_percent))
+
+                # move right or left and reach limits
+                if self.diff > 0 and self.horz_scrollbar.get()[1] <= 1:
+                    self.now_pos = self.now_pos + self.img_px_percent
+                elif self.diff < 0 and self.horz_scrollbar.get()[0] >= 0:
+                    self.now_pos = self.now_pos - self.img_px_percent
+
+                if self.now_pos > 1:
+                    self.now_pos = 1
+                if self.now_pos < 0:
+                    self.now_pos = 0
+
+                event.widget.xview_moveto(self.now_pos)
+                print("now_pos: {:.5f}".format(self.now_pos))
 
         # moveto_x = event.x / (self.image_width - mainWindow.winfo_width())
         # moveto_y = event.y / (self.image_height - mainWindow.winfo_height())
 
-        # % of screen that can be scrolled 1:1
-        scroll_length_p = self.horz_scrollbar.get(
-        )[1] - self.horz_scrollbar.get()[0]
-        # pixels that can be scrolled 1:1
-        pixel_amt = scroll_length_p * mainWindow.winfo_width()
-        # image division factor...how many scroll screens to get across image
-        img_divs = self.image_width / pixel_amt
+        # # % of screen that can be scrolled 1:1
+        # scroll_length_p = self.horz_scrollbar.get(
+        # )[1] - self.horz_scrollbar.get()[0]
+        # # pixels that can be scrolled 1:1
+        # pixel_amt = scroll_length_p * mainWindow.winfo_width()
+        # # image division factor...how many scroll screens to get across image
+        # img_divs = self.image_width / pixel_amt
 
         # moveto_x = self.horz_scrollbar.get()[0] * event.x/mainWindow.winfo_width()
         # moveto_y = self.vert_scrollbar.get()[0] * event.y/mainWindow.winfo_height()
 
-        # sort of works:
-        moveto_x = ((event.x / (mainWindow.winfo_width()-8)) / img_divs)
-        moveto_y = ((event.y / (mainWindow.winfo_height()-51)) / img_divs)
+        # # sort of works:
+        # moveto_x = ((event.x / (mainWindow.winfo_width()-8)) / img_divs)
+        # moveto_y = ((event.y / (mainWindow.winfo_height()-51)) / img_divs)
 
-        event.widget.xview_moveto(moveto_x + self.horz_scrollbar.get()[0])
-        event.widget.yview_moveto(moveto_y + self.vert_scrollbar.get()[0])
+        # xmove_diff = self.horz_scrollbar.get()[0] - moveto_x  # + or -
+        # ymove_diff = self.vert_scrollbar.get()[0] - moveto_y
+
+        # # event.widget.xview_moveto(moveto_x)
+        # # event.widget.yview_moveto(moveto_y)
+
+        # event.widget.xview_moveto(self.horz_scrollbar.get()[0] + xmove_diff)
+        # event.widget.yview_moveto(self.vert_scrollbar.get()[0] + ymove_diff)
+
+        # self.prev_x = self.horz_scrollbar.get()[0]
+        # self.prev_y = self.vert_scrollbar.get()[0]
 
         # self.move_x = event.x
         # self.move_y = event.y
@@ -899,8 +970,8 @@ class MainWindow:
         # self.prev_x = event.x
         # self.prev_y = event.y
 
-        print("move X: {:.2f} move Y: {:.2f}".format(moveto_x, moveto_y))
-        print()
+        # print("move X: {:.2f} move Y: {:.2f}".format(moveto_x, moveto_y))
+        # print()
 
     def refresh_image(self, event=None):
         # delete any previous items on canvas before refreshing
@@ -929,6 +1000,8 @@ class MainWindow:
         # by the garbage collector
         if self.image_exists:
             self.tk_image.image = self.tk_image
+
+        self.initial_scroll_pos = True
 
         # Check MEMORY Usage
         # pid = os.getpid()
