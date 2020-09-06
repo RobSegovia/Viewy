@@ -82,6 +82,9 @@ class MainWindow:
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
 
+        self.image_flip = None
+        self.image_flipped = False
+
         mainWindow.title("Viewy")
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
                                                  self.win_height,
@@ -479,6 +482,24 @@ class MainWindow:
             # print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+
+            if self.image_flip == 0:
+                if self.image_flipped:
+                    self.cv2_image = cv2.flip(self.cv2_image, 0)
+                    self.cv2_image = cv2.flip(self.cv2_image, 0)
+                    self.image_flipped = False
+                else:
+                    self.cv2_image = cv2.flip(self.cv2_image, 0)
+                    self.image_flipped = True
+            if self.image_flip == 1:
+                if self.image_flipped:
+                    self.cv2_image = cv2.flip(self.cv2_image, 1)
+                    self.cv2_image = cv2.flip(self.cv2_image, 1)
+                    self.image_flipped = False
+                else:
+                    self.cv2_image = cv2.flip(self.cv2_image, 1)
+                    self.image_flipped = True
+
             # convert to PIL colour order
             self.cv2_image = cv2.cvtColor(
                 self.cv2_image, cv2.COLOR_BGR2RGB)
@@ -498,6 +519,7 @@ class MainWindow:
             # before it can be resized...
             # load the image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+
             # convert to PIL colour order
             self.cv2_image = cv2.cvtColor(
                 self.cv2_image, cv2.COLOR_BGR2RGB)
@@ -608,6 +630,9 @@ class MainWindow:
                 self.info_text.set("Image {} of {}  ".format(
                     self.image_index+1, self.total_images))
 
+        print("image flip:", self.image_flip,
+              "image flipped:", self.image_flipped)
+
     def new_session(self):
         # this will require a pop-up window with options
         # such as: automatic zoom to window size
@@ -675,10 +700,16 @@ class MainWindow:
                           self.original_image_height)
 
     def flip_vert(self):
-        pass
+        self.image_flip = 0
+        self.load()
+        # self.cv2_image = cv2.flip(self.cv2_image, 0)
+        # self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        # self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        # self.refresh_image()
 
     def flip_horz(self):
-        pass
+        self.image_flip = 1
+        self.load()
 
     def rotate_left(self):
         pass
@@ -835,6 +866,7 @@ class MainWindow:
         else:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
+        self.refresh_image()
 
     # def refresh_geometry(self):
     #     self.win_location()
@@ -959,7 +991,7 @@ class MainWindow:
                     event.widget.xview_moveto(self.new_posx)
                 elif self.image_width < self.canvas.winfo_width() and self.image_height > self.canvas.winfo_height():
                     event.widget.yview_moveto(self.new_posy)
-            self.refresh_image()
+            # self.refresh_image()
             # print("now_pos: {:.5f}".format(self.now_pos))
 
     def refresh_image(self, event=None):
@@ -997,24 +1029,24 @@ class MainWindow:
         #     self.y_offset = (mainWindow.winfo_height() -
         #                      51 - self.image_height) / 2
         #     self.canvas.move(image_id, self.x_offset, self.y_offset)
-        #     self.canvas.xview_moveto(0.5)
-        #     self.canvas.yview_moveto(0.5)
+        #     # self.canvas.xview_moveto(0.5)
+        #     # self.canvas.yview_moveto(0.5)
         # elif (self.image_width > mainWindow.winfo_width()) and (self.image_height < mainWindow.winfo_height()):
         #     self.x_offset = (self.image_width - mainWindow.winfo_width()) / 2
         #     self.y_offset = (mainWindow.winfo_height() -
         #                      51 - self.image_height) / 2
         #     self.canvas.move(image_id, 0, self.y_offset)
-        #     self.canvas.xview_moveto(0.5)
-        #     self.canvas.yview_moveto(0.5)
+        #     # self.canvas.xview_moveto(0.5)
+        #     # self.canvas.yview_moveto(0.5)
         # elif (self.image_width < mainWindow.winfo_width()) and (self.image_height > mainWindow.winfo_height()):
         #     self.x_offset = (mainWindow.winfo_width() - self.image_width) / 2
         #     self.y_offset = (self.image_height -
         #                      mainWindow.winfo_height()-51) / 2
         #     self.canvas.move(image_id, self.x_offset, 0)
-        #     self.canvas.xview_moveto(0.5)
-        #     self.canvas.yview_moveto(0.5)
-            # self.canvas.xview_moveto(self.horz_scrollbar.get()[0])
-            # self.canvas.yview_moveto(self.vert_scrollbar.get()[0])
+        # self.canvas.xview_moveto(0.5)
+        # self.canvas.yview_moveto(0.5)
+        # self.canvas.xview_moveto(self.horz_scrollbar.get()[0])
+        # self.canvas.yview_moveto(self.vert_scrollbar.get()[0])
 
         # print("Win width:", mainWindow.winfo_width(),
         #       "Img width:", self.image_width)
