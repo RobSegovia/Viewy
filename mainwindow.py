@@ -874,7 +874,11 @@ class MainWindow:
 
     def drag_image(self, event=None):
         # self.refresh_geometry()
-        self.canvas.pack(fill=tkinter.BOTH, expand=True)
+
+        # TODO: If image is < window size on any side,
+        # the position jumps to side/top when starting to drag.
+        # When the window is resized even slightly, the image centers itself where it's supposed to be,
+        # also the vert scrollbar activates tho it doesn't have to.
 
         if self.image_exists and not (
             (self.image_width <= self.canvas.winfo_width()
@@ -890,7 +894,8 @@ class MainWindow:
                 # left side of scrollbar
                 self.new_posx = self.horz_scrollbar.get()[0]
                 self.new_posy = self.vert_scrollbar.get()[0]
-                # print("Scroll initial pos:", self.now_pos)
+                print("Scroll initial pos X:", self.new_posx)
+                print("Scroll initial pos Y:", self.new_posy)
                 self.now_px = event.x
                 self.now_py = event.y
                 self.initial_scroll_posx = False
@@ -933,8 +938,9 @@ class MainWindow:
                 elif self.diffy < 0 and self.vert_scrollbar.get()[0] >= 0:
                     self.new_posy = self.new_posy + self.img_pxy_percent
 
-                # print("new pos X:", self.new_posx)
-                # print("now pos Y:", self.new_posy)
+                print("new pos X:", self.new_posx)
+                print("new pos Y:", self.new_posy)
+                print()
 
                 if self.new_posx > 1:
                     self.new_posx = 1
@@ -946,9 +952,15 @@ class MainWindow:
                 if self.new_posy < 0:
                     self.new_posy = 0
 
-                event.widget.xview_moveto(self.new_posx)
-                event.widget.yview_moveto(self.new_posy)
-                # print("now_pos: {:.5f}".format(self.now_pos))
+                if self.image_width > self.canvas.winfo_width() and self.image_height > self.canvas.winfo_height():
+                    event.widget.xview_moveto(self.new_posx)
+                    event.widget.yview_moveto(self.new_posy)
+                elif self.image_width > self.canvas.winfo_width() and self.image_height < self.canvas.winfo_height():
+                    event.widget.xview_moveto(self.new_posx)
+                elif self.image_width < self.canvas.winfo_width() and self.image_height > self.canvas.winfo_height():
+                    event.widget.yview_moveto(self.new_posy)
+            self.refresh_image()
+            # print("now_pos: {:.5f}".format(self.now_pos))
 
     def refresh_image(self, event=None):
         # delete any previous items on canvas before refreshing
@@ -960,7 +972,7 @@ class MainWindow:
             w, h = event.width, event.height
             # offsets - 3 seems to center image on sides
             # 20 is good for medium images, 0 is perfect for small images...
-            xy = 3, 0, w, h
+            xy = 3, 0, w+1, h+1
             self.dummy_rect = self.canvas.create_rectangle(xy)
             self.canvas.itemconfig(self.dummy_rect, width=0)
 
