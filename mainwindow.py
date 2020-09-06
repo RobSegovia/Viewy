@@ -100,6 +100,7 @@ class MainWindow:
         self.image_frame = tkinter.Frame(
             mainWindow)
         self.image_frame.pack(fill=tkinter.BOTH, expand=True)
+
         self.canvas = tkinter.Canvas(
             self.image_frame, bg='black')
         self.canvas.bind('<Configure>', self.refresh_image)
@@ -835,6 +836,11 @@ class MainWindow:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
 
+    # def refresh_geometry(self):
+    #     self.win_location()
+    #     mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
+    #                                              mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
+
     def win_fit_size(self):
         self.win_location()
 
@@ -867,17 +873,17 @@ class MainWindow:
         # print("\t\t\t\t\t\tB1 released - prev_px =", self.prev_px)
 
     def drag_image(self, event=None):
-        # if self.image_exists:
+        # self.refresh_geometry()
+        self.canvas.pack(fill=tkinter.BOTH, expand=True)
 
-        #     self.canvas.delete(self.dummy_rect)
+        if self.image_exists and not (
+            (self.image_width <= self.canvas.winfo_width()
+             and self.image_height <= self.canvas.winfo_height())
+        ):
+            # Canvas's built in way of dragging:
+            # self.canvas.scan_dragto(event.x, event.y, gain=1)
 
-        # if event is not None:
-        # w, h = event.width, event.height
-        # xy = 3, 0, w, h
-        # self.dummy_rect = self.canvas.create_rectangle(xy)
-        # self.canvas.itemconfig(self.dummy_rect, width=0)
-
-        if self.image_exists:
+            # My way that I designed before realizing there was an easier way:
 
             # image was just loaded and at initial scroll pos
             if self.initial_scroll_pos:
@@ -971,6 +977,39 @@ class MainWindow:
         # by the garbage collector
         if self.image_exists:
             self.tk_image.image = self.tk_image
+
+        # TODO attempt at trying to center image. Doesn't work consistently yet.
+        # # give image an offset to center it according to its size
+        # if (self.image_width < mainWindow.winfo_width()) and (self.image_height < mainWindow.winfo_width()):
+        #     self.x_offset = (mainWindow.winfo_width() - self.image_width) / 2
+        #     self.y_offset = (mainWindow.winfo_height() -
+        #                      51 - self.image_height) / 2
+        #     self.canvas.move(image_id, self.x_offset, self.y_offset)
+        #     self.canvas.xview_moveto(0.5)
+        #     self.canvas.yview_moveto(0.5)
+        # elif (self.image_width > mainWindow.winfo_width()) and (self.image_height < mainWindow.winfo_height()):
+        #     self.x_offset = (self.image_width - mainWindow.winfo_width()) / 2
+        #     self.y_offset = (mainWindow.winfo_height() -
+        #                      51 - self.image_height) / 2
+        #     self.canvas.move(image_id, 0, self.y_offset)
+        #     self.canvas.xview_moveto(0.5)
+        #     self.canvas.yview_moveto(0.5)
+        # elif (self.image_width < mainWindow.winfo_width()) and (self.image_height > mainWindow.winfo_height()):
+        #     self.x_offset = (mainWindow.winfo_width() - self.image_width) / 2
+        #     self.y_offset = (self.image_height -
+        #                      mainWindow.winfo_height()-51) / 2
+        #     self.canvas.move(image_id, self.x_offset, 0)
+        #     self.canvas.xview_moveto(0.5)
+        #     self.canvas.yview_moveto(0.5)
+            # self.canvas.xview_moveto(self.horz_scrollbar.get()[0])
+            # self.canvas.yview_moveto(self.vert_scrollbar.get()[0])
+
+        # print("Win width:", mainWindow.winfo_width(),
+        #       "Img width:", self.image_width)
+        # print("Win height:", mainWindow.winfo_height(),
+        #       "Img height:", self.image_height)
+        # print("x:", self.x_offset, "y:", self.y_offset)
+        # print()
 
         self.initial_scroll_pos = True
 
