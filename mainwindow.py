@@ -1,7 +1,9 @@
 import tkinter
 import tkinter.filedialog
+import tkinter.messagebox
 import PIL.Image
 import PIL.ImageTk
+import numpy
 import cv2
 import os
 import psutil
@@ -478,27 +480,11 @@ class MainWindow:
             elif event.keysym == 'Left' and self.image_index > 0:
                 self.image_index -= 1
 
+        # if AUTO ZOOM is OFF
         if self.image_exists and self.zoom_auto_var.get() == 0:
             # print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
-
-            if self.image_flip == 0:
-                if self.image_flipped:
-                    self.cv2_image = cv2.flip(self.cv2_image, 0)
-                    self.cv2_image = cv2.flip(self.cv2_image, 0)
-                    self.image_flipped = False
-                else:
-                    self.cv2_image = cv2.flip(self.cv2_image, 0)
-                    self.image_flipped = True
-            if self.image_flip == 1:
-                if self.image_flipped:
-                    self.cv2_image = cv2.flip(self.cv2_image, 1)
-                    self.cv2_image = cv2.flip(self.cv2_image, 1)
-                    self.image_flipped = False
-                else:
-                    self.cv2_image = cv2.flip(self.cv2_image, 1)
-                    self.image_flipped = True
 
             # convert to PIL colour order
             self.cv2_image = cv2.cvtColor(
@@ -519,6 +505,8 @@ class MainWindow:
             # before it can be resized...
             # load the image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+
+            # TODO call flip cv2 image here
 
             # convert to PIL colour order
             self.cv2_image = cv2.cvtColor(
@@ -630,8 +618,8 @@ class MainWindow:
                 self.info_text.set("Image {} of {}  ".format(
                     self.image_index+1, self.total_images))
 
-        print("image flip:", self.image_flip,
-              "image flipped:", self.image_flipped)
+        # print("image flip:", self.image_flip,
+        #       "image flipped:", self.image_flipped)
 
     def new_session(self):
         # this will require a pop-up window with options
@@ -700,29 +688,59 @@ class MainWindow:
                           self.original_image_height)
 
     def flip_vert(self):
-        self.image_flip = 0
-        self.load()
-        # self.cv2_image = cv2.flip(self.cv2_image, 0)
-        # self.pil_image = PIL.Image.fromarray(self.cv2_image)
-        # self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
-        # self.refresh_image()
+        # self.image_flip = 0
+        # self.load()
+        self.cv2_image = cv2.flip(self.cv2_image, 0)
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
 
     def flip_horz(self):
-        self.image_flip = 1
-        self.load()
+        # self.image_flip = 1
+        # self.load()
+        self.cv2_image = cv2.flip(self.cv2_image, 1)
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
 
     def rotate_left(self):
-        pass
+        self.cv2_image = cv2.rotate(
+            self.cv2_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
 
     def rotate_right(self):
-        pass
+        self.cv2_image = cv2.rotate(
+            self.cv2_image, cv2.ROTATE_90_CLOCKWISE)
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
 
     def rotate_amount(self):
+        # image_center = tuple(numpy.array(self.cv2_image.shape[1::-1]) / 2)
+        # rotate_matrix = cv2.getRotationMatrix2D(image_center, -90, 1.0)
+        # self.cv2_image = cv2.warpAffine(self.cv2_image, rotate_matrix,
+        #                                 self.cv2_image.shape[1::-1], flags=cv2.INTER_LINEAR)
         pass
 
     def image_info(self):
         # TODO add a popup window with info about image...size, name, etc
-        pass
+        # tkinter.messagebox.showinfo(
+        #     "Image Information", "Is this the message?")
+        self.win_location()
+        popup = tkinter.Toplevel()
+        popup.geometry("{}x{}+{}+{}".format(200, 200,
+                                            self.win_x_offset+100, self.win_y_offset+160))
+        popup.attributes('-topmost', 'true')
+        popup.grid_rowconfigure(0, weight=1)
+        popup.grid_rowconfigure(1, weight=1)
+        popup.grid_columnconfigure(0, weight=1)
+
+        label = tkinter.Label(popup, text="Image Info")
+        label.grid(row=0, column=0)
+        b1 = tkinter.Button(popup, text="Okay", command=popup.destroy)
+        b1.grid(row=1, column=0)
 
     def undo(self):
         pass
