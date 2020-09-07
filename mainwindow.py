@@ -8,6 +8,8 @@ import cv2
 import os
 import psutil
 import random
+import requests
+import webbrowser
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
@@ -755,7 +757,18 @@ class MainWindow:
         pass
 
     def search_google(self):
-        pass
+        filePath = "{}".format(self.filenames_list[self.image_index])
+        print(filePath)
+        searchUrl = 'http://www.google.com/searchbyimage/upload'
+        multipart = {'encoded_image': (filePath, open(
+            filePath, 'rb')), 'image_content': ''}
+        response = requests.post(
+            searchUrl, files=multipart, allow_redirects=False)
+        # print("response type:", type(response))
+        # print(response.headers)
+        fetchUrl = response.headers['Location']
+        # print(fetchUrl)
+        webbrowser.open(fetchUrl)
 
     def resize_image(self, x=200, y=200):
         # print("\t--inside resize_image")
