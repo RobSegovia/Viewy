@@ -118,13 +118,15 @@ class MainWindow:
         self.vert_scrollbar = tkinter.Scrollbar(
             self.image_frame)
         self.vert_scrollbar.config(command=self.canvas.yview)
-        self.vert_scrollbar.pack(side=tkinter.RIGHT,
-                                 fill='y')
+        # self.vert_scrollbar.pack(side=tkinter.RIGHT,
+        #                          fill='y')
+        # self.vert_scrollbar.pack_forget()
 
         self.horz_scrollbar = tkinter.Scrollbar(
             self.image_frame, orient=tkinter.HORIZONTAL)
-        self.horz_scrollbar.pack(side=tkinter.BOTTOM, fill='x')
         self.horz_scrollbar.config(command=self.canvas.xview)
+        # self.horz_scrollbar.pack(side=tkinter.BOTTOM, fill='x')
+        # self.horz_scrollbar.pack_forget()
 
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
         self.canvas.config(
@@ -1026,8 +1028,26 @@ class MainWindow:
             # print("now_pos: {:.5f}".format(self.now_pos))
 
     def refresh_image(self, event=None):
+        self.canvas.pack_forget()
+
+        if self.image_width > self.canvas.winfo_width() and self.image_height > self.canvas.winfo_height():
+            self.vert_scrollbar.pack(side='right', fill='y')
+            self.horz_scrollbar.pack(side='bottom', fill='x')
+        elif self.image_width > self.canvas.winfo_width():
+            self.horz_scrollbar.pack(side='bottom', fill='x')
+            self.vert_scrollbar.pack_forget()
+        elif self.image_height > self.canvas.winfo_height():
+            self.vert_scrollbar.pack(side='right', fill='y')
+            self.horz_scrollbar.pack_forget()
+        else:
+            self.vert_scrollbar.pack_forget()
+            self.horz_scrollbar.pack_forget()
+
+        self.canvas.pack(fill=tkinter.BOTH, expand=True)
+
         # delete any previous items on canvas before refreshing
         self.canvas.delete('all')
+
         # creates a dummy rectangle roughly the same size as the canvas that
         # resets the ANCHOR value for centering the image.
         # Without it the image may not re-center properly when the window is resized
@@ -1043,6 +1063,7 @@ class MainWindow:
         image_id = self.canvas.create_image(int(self.canvas.winfo_width()/2), int(
             self.canvas.winfo_height()/2), anchor='center', image=self.tk_image, tag="image")
         self.image_dimensions(self.tk_image, 'tk_image')
+
         self.canvas.config(
             yscrollcommand=self.vert_scrollbar.set,
             xscrollcommand=self.horz_scrollbar.set,
@@ -1052,6 +1073,8 @@ class MainWindow:
         # by the garbage collector
         if self.image_exists:
             self.tk_image.image = self.tk_image
+
+        self.initial_scroll_pos = True
 
         # TODO attempt at trying to center image. Doesn't work consistently yet.
         # # give image an offset to center it according to its size
@@ -1085,8 +1108,6 @@ class MainWindow:
         #       "Img height:", self.image_height)
         # print("x:", self.x_offset, "y:", self.y_offset)
         # print()
-
-        self.initial_scroll_pos = True
 
         # Check MEMORY Usage
         # pid = os.getpid()
