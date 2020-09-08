@@ -404,16 +404,16 @@ class MainWindow:
                         len(self.filenames_string)))
                 # enable menu items once an image is loaded
                 # NOTE: add_separator does not have a state!
-                self.file_menu.entryconfig(3, state='normal')
-                self.menubar.entryconfig("View", state='normal')
-                self.menubar.entryconfig("Image", state='normal')
-                self.lock_aspect()
-                self.window_menu.entryconfig(8, state='normal')
-                self.window_menu.entryconfig(9, state='normal')
-                self.window_menu.entryconfig(10, state='normal')
-                self.window_menu.entryconfig(12, state='normal')
-                self.window_menu.entryconfig(13, state='normal')
-
+                # self.file_menu.entryconfig(3, state='normal')
+                # self.menubar.entryconfig("View", state='normal')
+                # self.menubar.entryconfig("Image", state='normal')
+                # self.lock_aspect()
+                # self.window_menu.entryconfig(8, state='normal')
+                # self.window_menu.entryconfig(9, state='normal')
+                # self.window_menu.entryconfig(10, state='normal')
+                # self.window_menu.entryconfig(12, state='normal')
+                # self.window_menu.entryconfig(13, state='normal')
+                self.restore_menu_items()
             # set to 0 so it won't run next time
             # unless it's turned on by accessing its menu option
             self.load_image_var.set(0)
@@ -465,15 +465,16 @@ class MainWindow:
                 # TODO refactor this code to avoid repetition
                 # enable menu items once an image is loaded
                 # NOTE: add_separator does not have a state!
-                self.file_menu.entryconfig(3, state='normal')
-                self.menubar.entryconfig("View", state='normal')
-                self.menubar.entryconfig("Image", state='normal')
-                self.lock_aspect()
-                self.window_menu.entryconfig(8, state='normal')
-                self.window_menu.entryconfig(9, state='normal')
-                self.window_menu.entryconfig(10, state='normal')
-                self.window_menu.entryconfig(12, state='normal')
-                self.window_menu.entryconfig(13, state='normal')
+                # self.file_menu.entryconfig(3, state='normal')
+                # self.menubar.entryconfig("View", state='normal')
+                # self.menubar.entryconfig("Image", state='normal')
+                # self.lock_aspect()
+                # self.window_menu.entryconfig(8, state='normal')
+                # self.window_menu.entryconfig(9, state='normal')
+                # self.window_menu.entryconfig(10, state='normal')
+                # self.window_menu.entryconfig(12, state='normal')
+                # self.window_menu.entryconfig(13, state='normal')
+                self.restore_menu_items()
 
             self.load_dir_var.set(0)
 
@@ -505,101 +506,105 @@ class MainWindow:
 
         # AUTO ZOOM is ON
         if self.zoom_auto_var.get() == 1:
-            # NOTE image needs to load after key event
-            # before it can be resized...
-            # load the image into CV2 array
-            self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+            try:
+                # NOTE image needs to load after key event
+                # before it can be resized...
+                # load the image into CV2 array
+                self.cv2_image = cv2.imread(
+                    self.filenames_list[self.image_index])
 
-            # TODO call flip cv2 image here
+                # TODO call flip cv2 image here
 
-            # convert to PIL colour order
-            self.cv2_image = cv2.cvtColor(
-                self.cv2_image, cv2.COLOR_BGR2RGB)
-            # convert array to PIL format
-            self.pil_image = PIL.Image.fromarray(self.cv2_image)
+                # convert to PIL colour order
+                self.cv2_image = cv2.cvtColor(
+                    self.cv2_image, cv2.COLOR_BGR2RGB)
+                # convert array to PIL format
+                self.pil_image = PIL.Image.fromarray(self.cv2_image)
 
-            self.image_dimensions(self.pil_image, 'pil_image')
+                self.image_dimensions(self.pil_image, 'pil_image')
 
-            # print("Auto zoom is on:", self.zoom_auto_var.get())
-            # print("win size:", mainWindow.winfo_width(),
-            #       mainWindow.winfo_height())
-            # print("image size:", self.image_width, self.image_height)
+                # print("Auto zoom is on:", self.zoom_auto_var.get())
+                # print("win size:", mainWindow.winfo_width(),
+                #       mainWindow.winfo_height())
+                # print("image size:", self.image_width, self.image_height)
 
-            w1 = mainWindow.winfo_width()
-            h1 = mainWindow.winfo_height()
-            w2 = self.image_width
-            h2 = self.image_height
+                w1 = mainWindow.winfo_width()
+                h1 = mainWindow.winfo_height()
+                w2 = self.image_width
+                h2 = self.image_height
 
-            min_of_window = min(w1, h1)
-            max_of_window = max(w1, h1)
+                min_of_window = min(w1, h1)
+                max_of_window = max(w1, h1)
 
-            win_ratio = w1 / h1
-            image_ratio = w2 / h2
+                win_ratio = w1 / h1
+                image_ratio = w2 / h2
 
-            # print("Min Max of window:", min_of_window, max_of_window)
-            # print("Win ratio:", win_ratio)
-            # print("Image ratio:", image_ratio)
+                # print("Min Max of window:", min_of_window, max_of_window)
+                # print("Win ratio:", win_ratio)
+                # print("Image ratio:", image_ratio)
 
-            # if ratios = same, resize both w and h to same size as window w and h
-            if win_ratio == 1 and image_ratio == 1:
-                self.resize_image(w1, h1)
-                # print("1-")
-
-            # if both are horizontal
-            elif win_ratio >= 1 and image_ratio >= 1:
-                # same size
-                if win_ratio == image_ratio:
-                    self.resize_image(w1-42, h1-42)
-                    # print("2--1")
-                # if window ratio is wider than image ratio
-                # then min of win ==> min of image
-                elif win_ratio > image_ratio:
-                    self.resize_image(
-                        int(min_of_window * image_ratio)-int(42*image_ratio), min_of_window-42)
-                    # print("2--2")
-                # if window ratio is less wide than image ratio
-                # then max of win ==> max of image
-                else:
-                    self.resize_image(
-                        max_of_window-21, int(max_of_window / image_ratio)-int(21/image_ratio))
-                    # print("2--3")
-
-            # if both are vertical
-            elif win_ratio <= 1 and image_ratio <= 1:
-                # same size
-                if win_ratio == image_ratio:
+                # if ratios = same, resize both w and h to same size as window w and h
+                if win_ratio == 1 and image_ratio == 1:
                     self.resize_image(w1, h1)
-                    # print("3--1")
-                # if window ratio is more(shorter) than image ratio
-                # then max of win ==> max of image
-                elif win_ratio > image_ratio:
+                    print("1-")
+
+                # if both are horizontal
+                elif win_ratio >= 1 and image_ratio >= 1:
+                    # same size
+                    if win_ratio == image_ratio:
+                        self.resize_image(w1-42, h1-42)
+                        print("2--1")
+                    # if window ratio is wider than image ratio
+                    # then min of win ==> min of image
+                    elif win_ratio > image_ratio:
+                        self.resize_image(
+                            int(min_of_window * image_ratio)-int(21*image_ratio), min_of_window-21)
+                        print("2--2")
+                    # if window ratio is less wide than image ratio
+                    # then max of win ==> max of image
+                    else:
+                        self.resize_image(
+                            max_of_window-10, int(max_of_window / image_ratio)-int(10/image_ratio))
+                        print("2--3")
+
+                # if both are vertical
+                elif win_ratio <= 1 and image_ratio <= 1:
+                    # same size
+                    if win_ratio == image_ratio:
+                        self.resize_image(w1, h1)
+                        print("3--1")
+                    # if window ratio is more(shorter) than image ratio
+                    # then max of win ==> max of image
+                    elif win_ratio > image_ratio:
+                        self.resize_image(
+                            int(max_of_window * image_ratio)-int(21*image_ratio), max_of_window-21)
+                        print("3--2")
+                    # if window ratio is less(taller) than image ratio
+                    # then min of win ==> min of image
+                    else:
+                        self.resize_image(
+                            min_of_window-10, int(min_of_window / image_ratio)-int(10/image_ratio))
+                        print("3--3")
+
+                # TODO fix this case
+                # if win is vertical and image is horizontal
+                elif win_ratio <= 1 and image_ratio >= 1:
+                    # max of image ==> min of window
+                    self.resize_image(min_of_window-10, int(
+                        min_of_window / image_ratio)-int(10/image_ratio))
+                    print("4-")
+
+                # if win is horizontal and image is verical
+                elif win_ratio >= 1 and image_ratio <= 1:
+                    # min of window ==> max of image
                     self.resize_image(
-                        int(max_of_window * image_ratio)-int(42*image_ratio), max_of_window-42)
-                    # print("3--2")
-                # if window ratio is less(taller) than image ratio
-                # then min of win ==> min of image
-                else:
-                    self.resize_image(
-                        min_of_window-21, int(min_of_window / image_ratio)-int(21/image_ratio))
-                    # print("3--3")
+                        int(min_of_window * image_ratio)-int(21*image_ratio), min_of_window-21)
+                    print("5-")
 
-            # TODO fix this case
-            # if win is vertical and image is horizontal
-            elif win_ratio <= 1 and image_ratio >= 1:
-                # max of image ==> min of window
-                self.resize_image(min_of_window-21, int(
-                    min_of_window / image_ratio)-int(21/image_ratio))
-                # print("4-")
-
-            # if win is horizontal and image is verical
-            elif win_ratio >= 1 and image_ratio <= 1:
-                # min of window ==> max of image
-                self.resize_image(
-                    int(min_of_window * image_ratio)-int(42*image_ratio), min_of_window-42)
-                # print("5-")
-
-            # print("Reached end of Zoom in load_image ")
-            # print()
+                # print("Reached end of Zoom in load_image ")
+                # print()
+            except:
+                print("-> Zoom ON - No image loaded")
 
         if self.zoom_width_var.get() == 1:
             ratio = self.original_image_width/self.original_image_height
@@ -625,10 +630,32 @@ class MainWindow:
         # print("image flip:", self.image_flip,
         #       "image flipped:", self.image_flipped)
 
+    def restore_menu_items(self):
+        self.file_menu.entryconfig(3, state='normal')
+        self.menubar.entryconfig("View", state='normal')
+        self.menubar.entryconfig("Image", state='normal')
+        self.lock_aspect()
+        self.window_menu.entryconfig(8, state='normal')
+        self.window_menu.entryconfig(9, state='normal')
+        self.window_menu.entryconfig(10, state='normal')
+        self.window_menu.entryconfig(12, state='normal')
+        self.window_menu.entryconfig(13, state='normal')
+
     def new_session(self):
-        # this will require a pop-up window with options
-        # such as: automatic zoom to window size
-        pass
+        self.win_location()
+        self.new_session_win = tkinter.Toplevel()
+        self.new_session_win.geometry("{}x{}+{}+{}".format(200, 200,
+                                                           self.win_x_offset+100, self.win_y_offset+160))
+        self.new_session_win.attributes('-topmost', 'true')
+        self.new_session_win.grid_rowconfigure(0, weight=1)
+        self.new_session_win.grid_rowconfigure(1, weight=1)
+        self.new_session_win.grid_columnconfigure(0, weight=1)
+
+        label = tkinter.Label(self.new_session_win, text="New Session")
+        label.grid(row=0, column=0)
+        b1 = tkinter.Button(self.new_session_win, text="Okay",
+                            command=self.new_session_win.destroy)
+        b1.grid(row=1, column=0)
 
     def save_session(self):
         # use pickle ??
@@ -899,7 +926,7 @@ class MainWindow:
         else:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
-        self.refresh_image()
+        # self.refresh_image()
 
     # def refresh_geometry(self):
     #     self.win_location()
@@ -1055,7 +1082,7 @@ class MainWindow:
             w, h = event.width, event.height
             # offsets - 3 seems to center image on sides
             # 20 is good for medium images, 0 is perfect for small images...
-            xy = 3, 0, w+1, h+1
+            xy = 3, 0, w, h
             self.dummy_rect = self.canvas.create_rectangle(xy)
             self.canvas.itemconfig(self.dummy_rect, width=0)
 
