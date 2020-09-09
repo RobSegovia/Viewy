@@ -10,6 +10,7 @@ import psutil
 import random
 import requests
 import webbrowser
+import subprocess
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
@@ -67,6 +68,7 @@ class MainWindow:
         self.zoom_auto_var = tkinter.IntVar()
         self.zoom_width_var = tkinter.IntVar()
         self.zoom_height_var = tkinter.IntVar()
+        self.image_path = tkinter.StringVar()
 
         self.prev_x = 0
         self.prev_y = 0
@@ -490,6 +492,7 @@ class MainWindow:
             # print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+            self.set_path()
 
             # convert to PIL colour order
             self.cv2_image = cv2.cvtColor(
@@ -513,7 +516,7 @@ class MainWindow:
                 self.cv2_image = cv2.imread(
                     self.filenames_list[self.image_index])
 
-                # TODO call flip cv2 image here
+                self.set_path()
 
                 # convert to PIL colour order
                 self.cv2_image = cv2.cvtColor(
@@ -552,7 +555,7 @@ class MainWindow:
                 elif win_ratio >= 1 and image_ratio >= 1:
                     # same size
                     if win_ratio == image_ratio:
-                        self.resize_image(w1-42, h1-42)
+                        self.resize_image(w1-10, h1-10)
                         print("2--1")
                     # if window ratio is wider than image ratio
                     # then min of win ==> min of image
@@ -629,6 +632,10 @@ class MainWindow:
 
         # print("image flip:", self.image_flip,
         #       "image flipped:", self.image_flipped)
+
+    def set_path(self):
+        self.image_path.set(self.filenames_list[self.image_index])
+        print("set_path: ", self.image_path.get())
 
     def restore_menu_items(self):
         self.file_menu.entryconfig(3, state='normal')
@@ -761,17 +768,59 @@ class MainWindow:
         #     "Image Information", "Is this the message?")
         self.win_location()
         popup = tkinter.Toplevel()
-        popup.geometry("{}x{}+{}+{}".format(200, 200,
+        popup.title('Image Info')
+        popup.geometry("{}x{}+{}+{}".format(500, 150,
                                             self.win_x_offset+100, self.win_y_offset+160))
         popup.attributes('-topmost', 'true')
-        popup.grid_rowconfigure(0, weight=1)
+        popup.grid_rowconfigure(0, weight=10)
         popup.grid_rowconfigure(1, weight=1)
-        popup.grid_columnconfigure(0, weight=1)
+        popup.grid_rowconfigure(2, weight=1)
+        popup.grid_rowconfigure(3, weight=1)
+        popup.grid_rowconfigure(4, weight=1)
+        popup.grid_rowconfigure(5, weight=10)
+        # popup.grid_rowconfigure(1, weight=1)
+        popup.grid_columnconfigure(0, weight=100)
+        popup.grid_columnconfigure(1, weight=10)
+        popup.grid_columnconfigure(2, weight=1)
+        popup.grid_columnconfigure(3, weight=10)
+        popup.grid_columnconfigure(4, weight=50)
+        popup.grid_columnconfigure(5, weight=50)
+        popup.grid_columnconfigure(6, weight=120)
 
-        label = tkinter.Label(popup, text="Image Info")
-        label.grid(row=0, column=0)
-        b1 = tkinter.Button(popup, text="Okay", command=popup.destroy)
-        b1.grid(row=1, column=0)
+        path_name = os.path.split(os.path.abspath(self.image_path.get()))
+
+        name = tkinter.Label(popup, text="Name:", anchor=tkinter.E)
+        name.grid(row=1, column=1, sticky='e')
+        name_box = tkinter.Text(popup, width=45, height=2, padx=5)
+        name_box.insert(tkinter.END, path_name[1])
+        name_box.config(state='disabled')
+        name_box.grid(row=1, column=3, sticky='w')
+
+        path = tkinter.Label(popup, text="Path:", anchor=tkinter.E)
+        path.grid(row=3, column=1, sticky='e')
+        path_box = tkinter.Text(popup, width=45, height=2, padx=5)
+        path_box.insert(tkinter.END, path_name[0])
+        path_box.config(state='disabled')
+        path_box.grid(row=3, column=3, sticky='w')
+
+        b1 = tkinter.Button(popup, text="Open Folder",
+                            command=self.open_folder)
+        b1.grid(row=3, column=4)
+
+        size = tkinter.Label(popup, text="Size:", anchor=tkinter.E)
+        size.grid(row=4, column=1, sticky='e')
+        size_string = "{} x {} px".format(self.image_width, self.image_height)
+        size_box = tkinter.Text(popup, width=30, height=1, padx=5)
+        size_box.insert(tkinter.END, size_string)
+        size_box.config(state='disabled')
+        size_box.grid(row=4, column=3, sticky='w')
+
+    def open_folder(self):
+        # subprocess.Popen(
+        #     r'explorer /select,"{}"'.format(self.image_path.get()), shell=True)
+        folder_path = os.path.split(os.path.abspath(self.image_path.get()))
+        os.startfile(folder_path[0])
+        # print(folder_path[0])
 
     def undo(self):
         pass
