@@ -146,6 +146,8 @@ class MainWindow:
         self.view_menu.bind('<<MenuSelect>>', self.status_update)
         self.image_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.image_menu.bind('<<MenuSelect>>', self.status_update)
+        self.timed_menu = tkinter.Menu(self.menubar, tearoff=0)
+        self.timed_menu.bind('<<MenuSelect>>', self.status_update)
         self.window_menu = tkinter.Menu(self.menubar, tearoff=0)
         self.window_menu.bind('<<MenuSelect>>', self.status_update)
         self.help_menu = tkinter.Menu(self.menubar, tearoff=0)
@@ -156,10 +158,11 @@ class MainWindow:
                 0: "Load 1 or more images",
                 1: "Load a directory of images",
                 2: "Start a new session and customize timing options",
-                3: "Save your current session",
-                4: "Load a previously saved session",
-                5: None,
-                6: "Exit the program"
+                3: "Edit a current session",
+                4: "Save your current session",
+                5: "Load a previously saved session",
+                6: None,
+                7: "Exit the program"
             },
             1: {
                 0: "Zoom into the image",
@@ -194,6 +197,11 @@ class MainWindow:
                 13: "Randomize the order of the images"
             },
             3: {
+                0: "Pause or Continue the timer",
+                1: "Skip to the next timer interval",
+                2: "Go back to the previous timer interval"
+            },
+            4: {
                 0: "Minimize the program window",
                 1: "Restore the program window",
                 2: "Fit the window to the screen's width",
@@ -209,7 +217,7 @@ class MainWindow:
                 12: "Show the tools sidebar",
                 13: "Hide the tools sidebar"
             },
-            4: {
+            5: {
                 0: "Access help documentation",
                 1: None,
                 2: "About this program"
@@ -229,6 +237,8 @@ class MainWindow:
         self.menubar.add_cascade(
             label="Image", menu=self.image_menu, state='disabled')
         self.menubar.add_cascade(
+            label="Timed Session", menu=self.timed_menu, state='normal')
+        self.menubar.add_cascade(
             label="Window", menu=self.window_menu)
         self.menubar.add_cascade(label="Help", menu=self.help_menu)
 
@@ -239,6 +249,9 @@ class MainWindow:
             label="Load Directory", command=self.load_dir)
         self.file_menu.add_command(
             label="New Session", command=self.new_session)
+        self.file_menu.add_command(
+            label="Edit Session", command=self.edit_session)
+        self.file_menu.entryconfig("Edit Session", state="disabled")
         self.file_menu.add_command(
             label="Save Session", command=self.save_session)
         self.file_menu.entryconfig("Save Session", state="disabled")
@@ -291,6 +304,13 @@ class MainWindow:
         self.image_menu.add_separator()
         self.image_menu.add_checkbutton(
             label="Random Order of Images", variable=self.random_on, command=self.randomizer)
+
+        self.timed_menu.add_command(
+            label="Pause/Continue", command=self.pause)
+        self.timed_menu.add_command(
+            label="Next Timed Interval", command=self.next_interval)
+        self.timed_menu.add_command(
+            label="Previous Timed Interval", command=self.prev_interval)
 
         self.window_menu.add_command(label="Minimize", command=self.min_window)
         self.window_menu.add_command(
@@ -408,17 +428,7 @@ class MainWindow:
                         self.image_index, self.total_images))
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_string)))
-                # enable menu items once an image is loaded
-                # NOTE: add_separator does not have a state!
-                # self.file_menu.entryconfig(3, state='normal')
-                # self.menubar.entryconfig("View", state='normal')
-                # self.menubar.entryconfig("Image", state='normal')
-                # self.lock_aspect()
-                # self.window_menu.entryconfig(8, state='normal')
-                # self.window_menu.entryconfig(9, state='normal')
-                # self.window_menu.entryconfig(10, state='normal')
-                # self.window_menu.entryconfig(12, state='normal')
-                # self.window_menu.entryconfig(13, state='normal')
+
                 self.restore_menu_items()
             # set to 0 so it won't run next time
             # unless it's turned on by accessing its menu option
@@ -455,12 +465,12 @@ class MainWindow:
 
             except FileNotFoundError:
                 # raise
-                self.status_text.set("  Action canceled - No directory loaded")
+                self.status_text.set(" Action canceled - No directory loaded")
             except IndexError:
                 # raise
-                self.status_text.set("  No files to load")
-            except AssertionError:
                 self.status_text.set(" No files to load")
+            except AssertionError:
+                self.status_text.set(" No valid files to load")
 
             else:
                 # reset filenames_list
@@ -610,8 +620,6 @@ class MainWindow:
                         int(min_of_window * image_ratio)-int(21*image_ratio), min_of_window-21)
                     print("5-")
 
-                # print("Reached end of Zoom in load_image ")
-                # print()
             except:
                 print("-> Zoom ON - No image loaded")
 
@@ -651,7 +659,7 @@ class MainWindow:
         # print("set_path: ", self.image_path.get())
 
     def restore_menu_items(self):
-        self.file_menu.entryconfig(3, state='normal')
+        # self.file_menu.entryconfig(3, state='normal')
         self.menubar.entryconfig("View", state='normal')
         self.menubar.entryconfig("Image", state='normal')
         self.lock_aspect()
@@ -664,6 +672,7 @@ class MainWindow:
     def new_session(self):
         self.win_location()
         self.new_session_win = tkinter.Toplevel()
+        self.new_session_win.title('Start a New Session')
         self.new_session_win.geometry("{}x{}+{}+{}".format(200, 200,
                                                            self.win_x_offset+100, self.win_y_offset+160))
         self.new_session_win.attributes('-topmost', 'true')
@@ -676,6 +685,10 @@ class MainWindow:
         b1 = tkinter.Button(self.new_session_win, text="Okay",
                             command=self.new_session_win.destroy)
         b1.grid(row=1, column=0)
+
+    def edit_session(self):
+        # same as new session with current directories pre-loaded
+        pass
 
     def save_session(self):
         # use pickle ??
@@ -900,6 +913,15 @@ class MainWindow:
         else:
             # restore original order
             self.filenames_list = self.filenames_list_backup.copy()
+
+    def pause(self):
+        pass
+
+    def next_interval(self):
+        pass
+
+    def prev_interval(self):
+        pass
 
     @ staticmethod
     def min_window():
