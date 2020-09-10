@@ -69,6 +69,9 @@ class MainWindow:
         self.zoom_width_var = tkinter.IntVar()
         self.zoom_height_var = tkinter.IntVar()
         self.image_path = tkinter.StringVar()
+        self.image_name = tkinter.StringVar()
+        self.image_folder = tkinter.StringVar()
+        self.image_size = tkinter.StringVar()
 
         self.prev_x = 0
         self.prev_y = 0
@@ -358,11 +361,11 @@ class MainWindow:
 
     def load_image(self):
         self.load_image_var.set(1)
-        self.load(event=None)
+        self.load()
 
     def load_dir(self):
         self.load_dir_var.set(1)
-        self.load(event=None)
+        self.load()
 
     # TODO: requires refactoring !!!!!!!
     def load(self, event=None):
@@ -492,7 +495,6 @@ class MainWindow:
             # print("** if zoom is off, finish loading image in load()\n")
             # load the first image into CV2 array
             self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
-            self.set_path()
 
             # convert to PIL colour order
             self.cv2_image = cv2.cvtColor(
@@ -506,6 +508,7 @@ class MainWindow:
             # store original dimensions of image
             self.original_image_width, self.original_image_height = self.image_width, self.image_height
             self.refresh_image()
+            self.set_path()
 
         # AUTO ZOOM is ON
         if self.zoom_auto_var.get() == 1:
@@ -516,8 +519,6 @@ class MainWindow:
                 self.cv2_image = cv2.imread(
                     self.filenames_list[self.image_index])
 
-                self.set_path()
-
                 # convert to PIL colour order
                 self.cv2_image = cv2.cvtColor(
                     self.cv2_image, cv2.COLOR_BGR2RGB)
@@ -525,6 +526,7 @@ class MainWindow:
                 self.pil_image = PIL.Image.fromarray(self.cv2_image)
 
                 self.image_dimensions(self.pil_image, 'pil_image')
+                self.set_path()
 
                 # print("Auto zoom is on:", self.zoom_auto_var.get())
                 # print("win size:", mainWindow.winfo_width(),
@@ -634,8 +636,15 @@ class MainWindow:
         #       "image flipped:", self.image_flipped)
 
     def set_path(self):
-        self.image_path.set(self.filenames_list[self.image_index])
-        print("set_path: ", self.image_path.get())
+        # self.image_path.set(self.filenames_list[self.image_index])
+        path = os.path.split(os.path.abspath(
+            self.filenames_list[self.image_index]))
+        self.image_name.set(path[1])
+        self.image_folder.set(path[0])
+        # self.image_dimensions(self.tk_image, 'tk_image')
+        self.image_size.set("{} x {} px".format(
+            self.image_width, self.image_height))
+        # print("set_path: ", self.image_path.get())
 
     def restore_menu_items(self):
         self.file_menu.entryconfig(3, state='normal')
@@ -787,20 +796,24 @@ class MainWindow:
         popup.grid_columnconfigure(5, weight=50)
         popup.grid_columnconfigure(6, weight=120)
 
-        path_name = os.path.split(os.path.abspath(self.image_path.get()))
+        # path_name = os.path.split(os.path.abspath(self.image_path.get()))
 
         name = tkinter.Label(popup, text="Name:", anchor=tkinter.E)
         name.grid(row=1, column=1, sticky='e')
-        name_box = tkinter.Text(popup, width=45, height=2, padx=5)
-        name_box.insert(tkinter.END, path_name[1])
-        name_box.config(state='disabled')
+        # name_box = tkinter.Text(popup, width=45, height=2, padx=5)
+        name_box = tkinter.Label(
+            popup, textvariable=self.image_name, bg='white', padx=5, width=45, wraplength=320, anchor='w')
+        # name_box.insert(tkinter.END, path_name[1])
+        # name_box.config(state='disabled')
         name_box.grid(row=1, column=3, sticky='w')
 
         path = tkinter.Label(popup, text="Path:", anchor=tkinter.E)
         path.grid(row=3, column=1, sticky='e')
-        path_box = tkinter.Text(popup, width=45, height=2, padx=5)
-        path_box.insert(tkinter.END, path_name[0])
-        path_box.config(state='disabled')
+        # path_box = tkinter.Text(popup, width=45, height=2, padx=5)
+        path_box = tkinter.Label(
+            popup, textvariable=self.image_folder, bg='white', padx=5, width=45, wraplength=320, anchor='w')
+        # path_box.insert(tkinter.END, path_name[0])
+        # path_box.config(state='disabled')
         path_box.grid(row=3, column=3, sticky='w')
 
         b1 = tkinter.Button(popup, text="Open Folder",
@@ -809,10 +822,12 @@ class MainWindow:
 
         size = tkinter.Label(popup, text="Size:", anchor=tkinter.E)
         size.grid(row=4, column=1, sticky='e')
-        size_string = "{} x {} px".format(self.image_width, self.image_height)
-        size_box = tkinter.Text(popup, width=30, height=1, padx=5)
-        size_box.insert(tkinter.END, size_string)
-        size_box.config(state='disabled')
+        # size_string = "{} x {} px".format(self.image_width, self.image_height)
+        # size_box = tkinter.Text(popup, width=30, height=1, padx=5)
+        size_box = tkinter.Label(
+            popup, textvariable=self.image_size, bg='white', padx=5, width=20)
+        # size_box.insert(tkinter.END, size_string)
+        # size_box.config(state='disabled')
         size_box.grid(row=4, column=3, sticky='w')
 
     def open_folder(self):
