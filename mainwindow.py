@@ -1,4 +1,5 @@
 import tkinter
+import tkinter.ttk
 import tkinter.filedialog
 import tkinter.messagebox
 import PIL.Image
@@ -672,19 +673,96 @@ class MainWindow:
     def new_session(self):
         self.win_location()
         self.new_session_win = tkinter.Toplevel()
+        self.new_session_win.resizable(False, False)
         self.new_session_win.title('Start a New Session')
-        self.new_session_win.geometry("{}x{}+{}+{}".format(200, 200,
-                                                           self.win_x_offset+100, self.win_y_offset+160))
+        self.new_session_win.geometry("{}x{}+{}+{}".format(450, 450,
+                                                           self.win_x_offset+80, self.win_y_offset+80))
         self.new_session_win.attributes('-topmost', 'true')
-        self.new_session_win.grid_rowconfigure(0, weight=1)
-        self.new_session_win.grid_rowconfigure(1, weight=1)
-        self.new_session_win.grid_columnconfigure(0, weight=1)
 
-        label = tkinter.Label(self.new_session_win, text="New Session")
-        label.grid(row=0, column=0)
-        b1 = tkinter.Button(self.new_session_win, text="Okay",
-                            command=self.new_session_win.destroy)
-        b1.grid(row=1, column=0)
+        self.new_session_win.grid_rowconfigure(0, weight=10)
+        self.new_session_win.grid_rowconfigure(1, weight=1)
+        self.new_session_win.grid_rowconfigure(2, weight=5)
+        self.new_session_win.grid_rowconfigure(3, weight=1)
+        self.new_session_win.grid_rowconfigure(4, weight=1)
+        self.new_session_win.grid_rowconfigure(5, weight=1)
+        self.new_session_win.grid_rowconfigure(6, weight=1)
+        self.new_session_win.grid_rowconfigure(7, weight=4)
+        self.new_session_win.grid_rowconfigure(8, weight=1)
+        self.new_session_win.grid_rowconfigure(9, weight=1)
+        self.new_session_win.grid_rowconfigure(10, weight=8)
+        self.new_session_win.grid_rowconfigure(11, weight=1)
+        self.new_session_win.grid_rowconfigure(12, weight=1)
+        self.new_session_win.grid_rowconfigure(13, weight=10)
+        self.new_session_win.grid_columnconfigure(0, weight=4)
+        self.new_session_win.grid_columnconfigure(1, weight=1)
+        self.new_session_win.grid_columnconfigure(2, weight=1)
+        self.new_session_win.grid_columnconfigure(3, weight=1)
+        self.new_session_win.grid_columnconfigure(4, weight=1)
+        self.new_session_win.grid_columnconfigure(5, weight=5)
+        self.new_session_win.grid_columnconfigure(6, weight=4)
+        self.new_session_win.grid_columnconfigure(7, weight=6)
+        self.new_session_win.grid_columnconfigure(8, weight=4)
+
+        dir_label = tkinter.Label(
+            self.new_session_win, text="Directories:", anchor='w')
+        dir_label.grid(row=1, column=1, sticky='w')
+        dir_box = tkinter.Text(self.new_session_win,
+                               width=35, height=10)
+        dir_box.grid(row=2, column=1, sticky='w', rowspan=5, columnspan=5)
+
+        add_dir_label = tkinter.Label(
+            self.new_session_win, text="Add\nDirectories:", anchor='w', justify='left')
+        add_dir_label.grid(row=2, column=7, sticky='w')
+        browse_button = tkinter.Button(self.new_session_win, text="Browse")
+        browse_button.grid(row=3, column=7)
+        incl_subdirs = tkinter.Checkbutton(
+            self.new_session_win, text="Include\nSubdirectories", justify='left')
+        incl_subdirs.grid(row=4, column=7, sticky='w')
+
+        browse_separator = tkinter.ttk.Separator(
+            self.new_session_win, orient='horizontal')
+        browse_separator.grid(row=5, column=7, sticky='we')
+
+        remove_dir = tkinter.Button(
+            self.new_session_win, text="Remove\nDirectory", state='disabled')
+        remove_dir.grid(row=6, column=7)
+
+        # mid_separator = tkinter.ttk.Separator(
+        #     self.new_session_win, orient='horizontal')
+        # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
+
+        add_time_label = tkinter.Label(
+            self.new_session_win, text="  Add time intervals per image:")
+        add_time_label.grid(row=8, column=1, sticky='w', columnspan=5)
+
+        minute_box = tkinter.Text(
+            self.new_session_win, width=3, height=1, padx=5)
+        minute_box.grid(row=9, column=1, sticky='e')
+        minute_label = tkinter.Label(
+            self.new_session_win, text="minutes", anchor='w')
+        minute_label.grid(row=9, column=2, sticky='w')
+
+        seconds_box = tkinter.Text(
+            self.new_session_win, width=3, height=1, padx=5)
+        seconds_box.grid(row=9, column=3, sticky='e')
+        seconds_label = tkinter.Label(
+            self.new_session_win, text="seconds", anchor='w')
+        seconds_label.grid(row=9, column=4, sticky='w')
+
+        add_time_button = tkinter.Button(
+            self.new_session_win, text="Add Interval")
+        add_time_button.grid(row=9, column=5, sticky='e')
+
+        intervals_box = tkinter.Text(self.new_session_win, width=30, height=8)
+        intervals_box.grid(row=10, column=1, rowspan=2, columnspan=5)
+
+        start_button = tkinter.Button(
+            self.new_session_win, text="Start", bd=4, padx=20, pady=10)
+        start_button.grid(row=11, column=7)
+
+        info_bar = tkinter.Label(self.new_session_win,
+                                 text="123 folders and 12345 images selected")
+        info_bar.grid(row=13, column=2, columnspan=5)
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
@@ -1192,32 +1270,6 @@ class MainWindow:
             self.tk_image.image = self.tk_image
 
         self.initial_scroll_pos = True
-
-        # TODO attempt at trying to center image. Doesn't work consistently yet.
-        # # give image an offset to center it according to its size
-        # if (self.image_width < mainWindow.winfo_width()) and (self.image_height < mainWindow.winfo_width()):
-        #     self.x_offset = (mainWindow.winfo_width() - self.image_width) / 2
-        #     self.y_offset = (mainWindow.winfo_height() -
-        #                      51 - self.image_height) / 2
-        #     self.canvas.move(image_id, self.x_offset, self.y_offset)
-        #     # self.canvas.xview_moveto(0.5)
-        #     # self.canvas.yview_moveto(0.5)
-        # elif (self.image_width > mainWindow.winfo_width()) and (self.image_height < mainWindow.winfo_height()):
-        #     self.x_offset = (self.image_width - mainWindow.winfo_width()) / 2
-        #     self.y_offset = (mainWindow.winfo_height() -
-        #                      51 - self.image_height) / 2
-        #     self.canvas.move(image_id, 0, self.y_offset)
-        #     # self.canvas.xview_moveto(0.5)
-        #     # self.canvas.yview_moveto(0.5)
-        # elif (self.image_width < mainWindow.winfo_width()) and (self.image_height > mainWindow.winfo_height()):
-        #     self.x_offset = (mainWindow.winfo_width() - self.image_width) / 2
-        #     self.y_offset = (self.image_height -
-        #                      mainWindow.winfo_height()-51) / 2
-        #     self.canvas.move(image_id, self.x_offset, 0)
-        # self.canvas.xview_moveto(0.5)
-        # self.canvas.yview_moveto(0.5)
-        # self.canvas.xview_moveto(self.horz_scrollbar.get()[0])
-        # self.canvas.yview_moveto(self.vert_scrollbar.get()[0])
 
         # print("Win width:", mainWindow.winfo_width(),
         #       "Img width:", self.image_width)
