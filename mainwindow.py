@@ -59,6 +59,7 @@ class MainWindow:
         self.image_index = None
         self.filenames_string = None
         self.filenames_list = []
+        self.new_filenames_list = []
         self.total_images = None
         self.image_exists = False
 
@@ -375,12 +376,12 @@ class MainWindow:
 
         # load one or more images
         if event is None and self.load_image_var.get() == 1:
-            # disable randomization at beginning
-            self.random_on.set(0)
-            self.total_images = 0
-            self.filenames_list.clear()
 
             try:
+                # disable randomization at beginning
+                self.random_on.set(0)
+                self.total_images = 0
+                self.filenames_list.clear()
                 # returns tuple of image paths
                 self.filenames_string = tkinter.filedialog.askopenfilenames(title="Select one or more images",
                                                                             filetypes=self.file_types)
@@ -426,12 +427,10 @@ class MainWindow:
         # load directory
         elif event is None and self.load_dir_var.get() == 1:
 
-            # disable randomization at beginning
-            self.random_on.set(0)
-            # reset filenames_list
-            self.filenames_list.clear()
-
             try:
+                self.new_filenames_list.clear()
+                # disable randomization at beginning
+                self.random_on.set(0)
                 # returns tuple of image paths
                 self.dir_path = tkinter.filedialog.askdirectory(
                     title="Select a directory of images to load")
@@ -446,20 +445,29 @@ class MainWindow:
                         # if the extension exists in the element
                         if (file_name[-4:] in string):
                             # then add it to the list
-                            self.filenames_list.append(full_path)
+                            self.new_filenames_list.append(full_path)
                     # NOTE: list comprehension version; for loop is more readable in this case
                     # [self.filenames_list.append(full_path) for string in self.file_types_list if (
                     #     file_name[-4:] in string)]
 
-                self.total_images = len(self.filenames_list)
+                self.total_images = len(self.new_filenames_list)
                 assert self.total_images >= 1
-                self.image_exists = True
 
-            except:
+            except FileNotFoundError:
                 # raise
-                self.status_text.set("  No directory loaded")
+                self.status_text.set("  Action canceled - No directory loaded")
+            except IndexError:
+                # raise
+                self.status_text.set("  No files to load")
+            except AssertionError:
+                self.status_text.set(" No files to load")
 
             else:
+                # reset filenames_list
+                self.filenames_list.clear()
+                self.image_exists = True
+                self.filenames_list = self.new_filenames_list.copy()
+
                 if self.total_images == 1:
                     self.status_text.set("  Image was loaded successfully")
                 else:
@@ -467,18 +475,6 @@ class MainWindow:
                         self.image_index, self.total_images))
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_list)))
-                # TODO refactor this code to avoid repetition
-                # enable menu items once an image is loaded
-                # NOTE: add_separator does not have a state!
-                # self.file_menu.entryconfig(3, state='normal')
-                # self.menubar.entryconfig("View", state='normal')
-                # self.menubar.entryconfig("Image", state='normal')
-                # self.lock_aspect()
-                # self.window_menu.entryconfig(8, state='normal')
-                # self.window_menu.entryconfig(9, state='normal')
-                # self.window_menu.entryconfig(10, state='normal')
-                # self.window_menu.entryconfig(12, state='normal')
-                # self.window_menu.entryconfig(13, state='normal')
                 self.restore_menu_items()
 
             self.load_dir_var.set(0)
@@ -492,23 +488,31 @@ class MainWindow:
 
         # if AUTO ZOOM is OFF
         if self.image_exists and self.zoom_auto_var.get() == 0:
-            # print("** if zoom is off, finish loading image in load()\n")
-            # load the first image into CV2 array
-            self.cv2_image = cv2.imread(self.filenames_list[self.image_index])
+            try:
+                # print("** if zoom is off, finish loading image in load()\n")
+                # load the first image into CV2 array
+                # print(self.filenames_list[self.image_index])
+                self.cv2_image = cv2.imread(
+                    self.filenames_list[self.image_index])
 
-            # convert to PIL colour order
-            self.cv2_image = cv2.cvtColor(
-                self.cv2_image, cv2.COLOR_BGR2RGB)
-            # convert array to PIL format
-            self.pil_image = PIL.Image.fromarray(self.cv2_image)
-            # convert to tkinter format
-            self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
-            self.image_dimensions(self.tk_image, 'tk_image')
+                # convert to PIL colour order
+                self.cv2_image = cv2.cvtColor(
+                    self.cv2_image, cv2.COLOR_BGR2RGB)
+                # convert array to PIL format
+                self.pil_image = PIL.Image.fromarray(self.cv2_image)
+                # convert to tkinter format
+                self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+                self.image_dimensions(self.tk_image, 'tk_image')
 
-            # store original dimensions of image
-            self.original_image_width, self.original_image_height = self.image_width, self.image_height
-            self.refresh_image()
-            self.set_path()
+                # store original dimensions of image
+                self.original_image_width, self.original_image_height = self.image_width, self.image_height
+                self.refresh_image()
+                self.set_path()
+            except IndexError:
+                print(" No image to load")
+            except:
+                raise
+                print("-> Image could not be loaded")
 
         # AUTO ZOOM is ON
         if self.zoom_auto_var.get() == 1:
