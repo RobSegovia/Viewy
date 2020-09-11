@@ -71,6 +71,7 @@ class MainWindow:
         self.zoom_auto_var = tkinter.IntVar()
         self.zoom_width_var = tkinter.IntVar()
         self.zoom_height_var = tkinter.IntVar()
+        self.incl_subdirs_var = tkinter.IntVar()
         self.image_path = tkinter.StringVar()
         self.image_name = tkinter.StringVar()
         self.image_folder = tkinter.StringVar()
@@ -90,6 +91,9 @@ class MainWindow:
         self.diffx = 0
         self.diffy = 0
         self.b1_released = True
+
+        self.temp_list = []
+        self.tabs = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -680,7 +684,7 @@ class MainWindow:
         self.new_session_win.title('Start a New Session')
         self.new_session_win.geometry("{}x{}+{}+{}".format(440, 450,
                                                            self.win_x_offset+80, self.win_y_offset+80))
-        self.new_session_win.attributes('-topmost', 'true')
+        # self.new_session_win.attributes('-topmost', 'true')
 
         self.new_session_win.grid_rowconfigure(0, weight=10)
         self.new_session_win.grid_rowconfigure(1, weight=10)
@@ -725,18 +729,18 @@ class MainWindow:
         top_right_frame.grid_columnconfigure(1, weight=1)
         top_right_frame.grid_columnconfigure(2, weight=1)
         top_right_frame.grid_columnconfigure(3, weight=4)
-        # top_right_frame.grid_columnconfigure(4, weight=5)
-        # top_right_frame.grid_columnconfigure(3, weight=1)
 
         plus_font = tkinter.font.Font(family="Verdana", size=14)
         browse_button = tkinter.Button(
-            top_right_frame, text="+", font=plus_font)
+            top_right_frame, text="+", font=plus_font, command=self.browse_dir)
         browse_button.grid(row=3, column=1)
+        # grab focus after closing Browse window
+        self.new_session_win.grab_set()
         add_dir_label = tkinter.Label(
             top_right_frame, text="Add\nDirectory", anchor='w', justify='left')
         add_dir_label.grid(row=3, column=2, sticky='w')
         incl_subdirs = tkinter.Checkbutton(
-            top_right_frame, text="Include\nSubdirectories", justify='left')
+            top_right_frame, text="Include\nSubdirectories", justify='left', variable=self.incl_subdirs_var)
         incl_subdirs.grid(row=4, column=2, sticky='e')
 
         browse_separator = tkinter.ttk.Separator(
@@ -751,9 +755,9 @@ class MainWindow:
             top_right_frame, text="Remove\nDirectory", anchor='w', justify='left')
         remove_dir_label.grid(row=7, column=2, sticky='w')
 
-        # # mid_separator = tkinter.ttk.Separator(
-        # #     self.new_session_win, orient='horizontal')
-        # # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
+        # mid_separator = tkinter.ttk.Separator(
+        #     , orient='horizontal')
+        # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
 
         bottom_left_frame.grid_rowconfigure(0, weight=1)
         bottom_left_frame.grid_rowconfigure(1, weight=1)
@@ -808,9 +812,100 @@ class MainWindow:
         bottom_frame = tkinter.Label(
             self.new_session_win, textvariable=new_session_info)
         bottom_frame.grid(row=2, column=0, sticky='we', columnspan=2)
-        # info_bar = tkinter.Label(self.new_session_win,
-        #                          text="123 folders and 12345 images selected")
-        # info_bar.grid(row=13, column=2, columnspan=5)
+
+    def browse_dir(self):
+        self.new_filenames_list.clear()
+
+        if self.incl_subdirs_var.get() == 1:
+            # print("Include subdirectories")
+            path = tkinter.filedialog.askdirectory(
+                title="Select a directory of images to load (Includes Sub-directories)")
+            list_subd_paths = [
+                folder.path for folder in os.scandir(path) if folder.is_dir()]
+
+            # TODO scan all dirs for subdirs and add to a list that
+            # will get scanned later
+
+            # print(path)
+            all_folders_list = []
+            all_folders_list.append(path)
+
+            # self.temp_list.append(path)
+            self.temp_list = self.recurs_folder_scan(all_folders_list)
+            print()
+            self.print_path_list(self.temp_list)
+            # print("temp list -", self.temp_list)
+
+            # sub_paths = [folder.path for folder in os.scandir(pathlist[item]) if folder.is_dir()]
+            # for folder in sub_paths:
+            #     sub_folder = os.scandir(folder)
+            #     if len(sub_folder) > 0:
+            #         print(sub_folder)
+
+            # for folder_path in
+
+            # for file_name in os.listdir(path):
+            #     full_path = os.path.join(path, file_name)
+
+            #     # for every extension type in the reference list
+            #     for string in self.file_types_list:
+            #         # if the extension exists in the element
+            #         if (file_name[-4:] in string):
+            #             # then add it to the list
+            #             self.new_filenames_list.append(full_path)
+
+            # self.total_images = len(self.new_filenames_list)
+            # assert self.total_images >= 1
+
+            # print(list_subd_paths)
+        else:
+            # returns tuple of image paths
+            path = tkinter.filedialog.askdirectory(
+                title="Select a directory of images to load")
+            # print("clicked +")
+
+        # print(path)
+        print()
+
+    def recurs_folder_scan(self, pathlist):
+        # if len(pathlist) > 0:
+        #     print("pathlist:", pathlist)
+
+        # for item in range(len(pathlist))
+
+        recurs_list = []
+        for item in range(len(pathlist)):
+            # if len(pathlist) > 0:
+            #     print("\tpathlist item:", item, pathlist[item])
+
+            # self.temp_list.append(pathlist[item])
+            # print("inside -", self.temp_list)
+            recurs_list.append(pathlist[item])
+
+            sub_paths = [folder.path for folder in os.scandir(
+                pathlist[item]) if folder.is_dir()]
+
+            if len(sub_paths) > 0:
+                # print("\t\tsub_paths:", sub_paths)
+                # print("item:", item)
+
+                recurs_list.append(self.recurs_folder_scan(sub_paths))
+                # print(recurs_list)
+                # print()
+            # self.temp_list.append(recurs_list)
+            # print(recurs_list)
+        # print()
+        return recurs_list
+
+    def print_path_list(self, tlist):
+        for item in tlist:
+            # print(type(item))
+            if type(item) == str:
+                print("\t" * self.tabs, item)
+            else:
+                self.tabs += 1
+                self.print_path_list(item)
+                self.tabs -= 1
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
