@@ -1,5 +1,6 @@
 import tkinter
 import tkinter.ttk
+import tkinter.font
 import tkinter.filedialog
 import tkinter.messagebox
 import PIL.Image
@@ -671,98 +672,145 @@ class MainWindow:
         self.window_menu.entryconfig(13, state='normal')
 
     def new_session(self):
+        new_session_info = tkinter.StringVar()
+
         self.win_location()
         self.new_session_win = tkinter.Toplevel()
         self.new_session_win.resizable(False, False)
         self.new_session_win.title('Start a New Session')
-        self.new_session_win.geometry("{}x{}+{}+{}".format(450, 450,
+        self.new_session_win.geometry("{}x{}+{}+{}".format(440, 450,
                                                            self.win_x_offset+80, self.win_y_offset+80))
         self.new_session_win.attributes('-topmost', 'true')
 
         self.new_session_win.grid_rowconfigure(0, weight=10)
-        self.new_session_win.grid_rowconfigure(1, weight=1)
-        self.new_session_win.grid_rowconfigure(2, weight=5)
-        self.new_session_win.grid_rowconfigure(3, weight=1)
-        self.new_session_win.grid_rowconfigure(4, weight=1)
-        self.new_session_win.grid_rowconfigure(5, weight=1)
-        self.new_session_win.grid_rowconfigure(6, weight=1)
-        self.new_session_win.grid_rowconfigure(7, weight=4)
-        self.new_session_win.grid_rowconfigure(8, weight=1)
-        self.new_session_win.grid_rowconfigure(9, weight=1)
-        self.new_session_win.grid_rowconfigure(10, weight=8)
-        self.new_session_win.grid_rowconfigure(11, weight=1)
-        self.new_session_win.grid_rowconfigure(12, weight=1)
-        self.new_session_win.grid_rowconfigure(13, weight=10)
-        self.new_session_win.grid_columnconfigure(0, weight=4)
-        self.new_session_win.grid_columnconfigure(1, weight=1)
-        self.new_session_win.grid_columnconfigure(2, weight=1)
-        self.new_session_win.grid_columnconfigure(3, weight=1)
-        self.new_session_win.grid_columnconfigure(4, weight=1)
-        self.new_session_win.grid_columnconfigure(5, weight=5)
-        self.new_session_win.grid_columnconfigure(6, weight=4)
-        self.new_session_win.grid_columnconfigure(7, weight=6)
-        self.new_session_win.grid_columnconfigure(8, weight=4)
+        self.new_session_win.grid_rowconfigure(1, weight=10)
+        self.new_session_win.grid_rowconfigure(2, weight=1)
+        self.new_session_win.grid_columnconfigure(0, weight=8)
+        self.new_session_win.grid_columnconfigure(1, weight=3)
+
+        top_left_frame = tkinter.Frame(self.new_session_win)
+        top_left_frame.grid(row=0, column=0, sticky='nswe')
+        top_right_frame = tkinter.Frame(self.new_session_win)
+        top_right_frame.grid(row=0, column=1, sticky='nswe')
+        bottom_right_frame = tkinter.Frame(self.new_session_win)
+        bottom_right_frame.grid(row=1, column=1, sticky='nswe')
+        bottom_left_frame = tkinter.Frame(self.new_session_win)
+        bottom_left_frame.grid(row=1, column=0, sticky='nswe')
+
+        top_left_frame.grid_rowconfigure(0, weight=1)
+        top_left_frame.grid_rowconfigure(1, weight=1)
+        top_left_frame.grid_rowconfigure(2, weight=1)
+        top_left_frame.grid_rowconfigure(3, weight=1)
+        top_left_frame.grid_columnconfigure(0, weight=1)
+        top_left_frame.grid_columnconfigure(1, weight=1)
+        top_left_frame.grid_columnconfigure(2, weight=1)
 
         dir_label = tkinter.Label(
-            self.new_session_win, text="Directories:", anchor='w')
+            top_left_frame, text="Directories:", anchor='w')
         dir_label.grid(row=1, column=1, sticky='w')
-        dir_box = tkinter.Text(self.new_session_win,
-                               width=35, height=10)
-        dir_box.grid(row=2, column=1, sticky='w', rowspan=5, columnspan=5)
+        dir_box = tkinter.Text(top_left_frame,
+                               width=30, height=10)
+        dir_box.grid(row=2, column=1, sticky='w')
 
+        top_right_frame.grid_rowconfigure(0, weight=1)
+        top_right_frame.grid_rowconfigure(1, weight=1)
+        top_right_frame.grid_rowconfigure(2, weight=1)
+        top_right_frame.grid_rowconfigure(3, weight=1)
+        top_right_frame.grid_rowconfigure(4, weight=1)
+        top_right_frame.grid_rowconfigure(5, weight=1)
+        top_right_frame.grid_rowconfigure(6, weight=1)
+        top_right_frame.grid_rowconfigure(7, weight=1)
+        top_right_frame.grid_rowconfigure(8, weight=1)
+        top_right_frame.grid_columnconfigure(0, weight=4)
+        top_right_frame.grid_columnconfigure(1, weight=1)
+        top_right_frame.grid_columnconfigure(2, weight=1)
+        top_right_frame.grid_columnconfigure(3, weight=4)
+        # top_right_frame.grid_columnconfigure(4, weight=5)
+        # top_right_frame.grid_columnconfigure(3, weight=1)
+
+        plus_font = tkinter.font.Font(family="Verdana", size=14)
+        browse_button = tkinter.Button(
+            top_right_frame, text="+", font=plus_font)
+        browse_button.grid(row=3, column=1)
         add_dir_label = tkinter.Label(
-            self.new_session_win, text="Add\nDirectories:", anchor='w', justify='left')
-        add_dir_label.grid(row=2, column=7, sticky='w')
-        browse_button = tkinter.Button(self.new_session_win, text="Browse")
-        browse_button.grid(row=3, column=7)
+            top_right_frame, text="Add\nDirectory", anchor='w', justify='left')
+        add_dir_label.grid(row=3, column=2, sticky='w')
         incl_subdirs = tkinter.Checkbutton(
-            self.new_session_win, text="Include\nSubdirectories", justify='left')
-        incl_subdirs.grid(row=4, column=7, sticky='w')
+            top_right_frame, text="Include\nSubdirectories", justify='left')
+        incl_subdirs.grid(row=4, column=2, sticky='e')
 
         browse_separator = tkinter.ttk.Separator(
-            self.new_session_win, orient='horizontal')
-        browse_separator.grid(row=5, column=7, sticky='we')
+            top_right_frame, orient='horizontal')
+        browse_separator.grid(row=6, column=1, sticky='we', columnspan=2)
 
+        minus_font = tkinter.font.Font(family="Verdana", size=16)
         remove_dir = tkinter.Button(
-            self.new_session_win, text="Remove\nDirectory", state='disabled')
-        remove_dir.grid(row=6, column=7)
+            top_right_frame, text="-", font=minus_font, state='disabled')
+        remove_dir.grid(row=7, column=1)
+        remove_dir_label = tkinter.Label(
+            top_right_frame, text="Remove\nDirectory", anchor='w', justify='left')
+        remove_dir_label.grid(row=7, column=2, sticky='w')
 
-        # mid_separator = tkinter.ttk.Separator(
-        #     self.new_session_win, orient='horizontal')
-        # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
+        # # mid_separator = tkinter.ttk.Separator(
+        # #     self.new_session_win, orient='horizontal')
+        # # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
+
+        bottom_left_frame.grid_rowconfigure(0, weight=1)
+        bottom_left_frame.grid_rowconfigure(1, weight=1)
+        bottom_left_frame.grid_rowconfigure(2, weight=1)
+        bottom_left_frame.grid_rowconfigure(3, weight=1)
+        bottom_left_frame.grid_rowconfigure(4, weight=1)
+        bottom_left_frame.grid_columnconfigure(0, weight=1)
+        bottom_left_frame.grid_columnconfigure(1, weight=1)
+        bottom_left_frame.grid_columnconfigure(2, weight=1)
+        bottom_left_frame.grid_columnconfigure(3, weight=1)
+        bottom_left_frame.grid_columnconfigure(4, weight=1)
+        bottom_left_frame.grid_columnconfigure(5, weight=1)
+        bottom_left_frame.grid_columnconfigure(6, weight=4)
 
         add_time_label = tkinter.Label(
-            self.new_session_win, text="  Add time intervals per image:")
-        add_time_label.grid(row=8, column=1, sticky='w', columnspan=5)
+            bottom_left_frame, text="  Add time intervals per image:")
+        add_time_label.grid(row=1, column=1, sticky='w', columnspan=5)
 
         minute_box = tkinter.Text(
-            self.new_session_win, width=3, height=1, padx=5)
-        minute_box.grid(row=9, column=1, sticky='e')
+            bottom_left_frame, width=2, height=1, padx=5)
+        minute_box.grid(row=2, column=1, sticky='e')
         minute_label = tkinter.Label(
-            self.new_session_win, text="minutes", anchor='w')
-        minute_label.grid(row=9, column=2, sticky='w')
+            bottom_left_frame, text="minutes", anchor='w')
+        minute_label.grid(row=2, column=2, sticky='w')
 
         seconds_box = tkinter.Text(
-            self.new_session_win, width=3, height=1, padx=5)
-        seconds_box.grid(row=9, column=3, sticky='e')
+            bottom_left_frame, width=2, height=1, padx=5)
+        seconds_box.grid(row=2, column=3, sticky='e')
         seconds_label = tkinter.Label(
-            self.new_session_win, text="seconds", anchor='w')
-        seconds_label.grid(row=9, column=4, sticky='w')
+            bottom_left_frame, text="seconds", anchor='w')
+        seconds_label.grid(row=2, column=4, sticky='w')
 
         add_time_button = tkinter.Button(
-            self.new_session_win, text="Add Interval")
-        add_time_button.grid(row=9, column=5, sticky='e')
+            bottom_left_frame, text="Add")
+        add_time_button.grid(row=2, column=5, sticky='e')
 
-        intervals_box = tkinter.Text(self.new_session_win, width=30, height=8)
-        intervals_box.grid(row=10, column=1, rowspan=2, columnspan=5)
+        intervals_box = tkinter.Text(bottom_left_frame, width=30, height=8)
+        intervals_box.grid(row=3, column=1, columnspan=5)
+
+        bottom_right_frame.grid_rowconfigure(0, weight=3)
+        bottom_right_frame.grid_rowconfigure(1, weight=1)
+        bottom_right_frame.grid_rowconfigure(2, weight=1)
+        bottom_right_frame.grid_columnconfigure(0, weight=1)
+        bottom_right_frame.grid_columnconfigure(1, weight=1)
+        bottom_right_frame.grid_columnconfigure(2, weight=1)
 
         start_button = tkinter.Button(
-            self.new_session_win, text="Start", bd=4, padx=20, pady=10)
-        start_button.grid(row=11, column=7)
+            bottom_right_frame, text="Start", bd=4, padx=30, pady=20)
+        start_button.grid(row=1, column=1)
 
-        info_bar = tkinter.Label(self.new_session_win,
-                                 text="123 folders and 12345 images selected")
-        info_bar.grid(row=13, column=2, columnspan=5)
+        new_session_info.set("123 folders and 12345 images selected")
+        bottom_frame = tkinter.Label(
+            self.new_session_win, textvariable=new_session_info)
+        bottom_frame.grid(row=2, column=0, sticky='we', columnspan=2)
+        # info_bar = tkinter.Label(self.new_session_win,
+        #                          text="123 folders and 12345 images selected")
+        # info_bar.grid(row=13, column=2, columnspan=5)
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
