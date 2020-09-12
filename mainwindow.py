@@ -38,7 +38,7 @@ class MainWindow:
     screen_height = 0
     win_width = 640
     win_height = 480
-    win_x_offset = 2500
+    win_x_offset = 3000
     win_y_offset = 100
     image_width = 0
     image_height = 0
@@ -62,8 +62,11 @@ class MainWindow:
         self.filenames_string = None
         self.filenames_list = []
         self.new_filenames_list = []
+        self.temp_new_filenames_list = []
+        self.new_folders_list = []
         self.total_images = None
         self.image_exists = False
+        self.new_session_image_counter = 0
 
         self.load_image_var = tkinter.IntVar()
         self.load_dir_var = tkinter.IntVar()
@@ -76,6 +79,7 @@ class MainWindow:
         self.image_name = tkinter.StringVar()
         self.image_folder = tkinter.StringVar()
         self.image_size = tkinter.StringVar()
+        self.new_session_info_msg = tkinter.StringVar()
 
         self.prev_x = 0
         self.prev_y = 0
@@ -676,7 +680,6 @@ class MainWindow:
         self.window_menu.entryconfig(13, state='normal')
 
     def new_session(self):
-        new_session_info = tkinter.StringVar()
 
         self.win_location()
         self.new_session_win = tkinter.Toplevel()
@@ -809,13 +812,27 @@ class MainWindow:
         bottom_right_frame.grid_columnconfigure(2, weight=1)
 
         start_button = tkinter.Button(
-            bottom_right_frame, text="Start", bd=4, padx=30, pady=20)
+            bottom_right_frame, text="Start", bd=4, padx=30, pady=20, command=self.start_session)
         start_button.grid(row=1, column=1)
 
-        new_session_info.set("123 folders and 12345 images selected")
+        self.new_session_info_msg.set(
+            "Only folders that contain images will be queued")
         bottom_frame = tkinter.Label(
-            self.new_session_win, textvariable=new_session_info)
+            self.new_session_win, textvariable=self.new_session_info_msg)
         bottom_frame.grid(row=2, column=0, sticky='we', columnspan=2)
+
+    def start_session(self):
+        self.new_session_win.destroy()
+        for item in self.new_folders_list:
+            self.scan_images(item)
+        self.filenames_list = self.temp_new_filenames_list.copy()
+        self.temp_new_filenames_list.clear()
+
+        self.restore_menu_items()
+        self.image_exists = True
+        self.image_index = 0
+        self.total_images = self.new_session_image_counter
+        self.load()
 
     def browse_dir(self):
         # self.new_filenames_list.clear()
@@ -835,8 +852,11 @@ class MainWindow:
 
                 # don't add list items if they're already in the list
                 for item in all_folders_list:
-                    if item in self.new_filenames_list:
+                    if item in self.new_folders_list:
                         all_folders_list.remove(item)
+                    else:
+                        if not self.contains_images(item):
+                            all_folders_list.remove(item)
 
                 if all_folders_list:
                     # call RECURSIVE function
@@ -857,8 +877,8 @@ class MainWindow:
             try:
                 path = tkinter.filedialog.askdirectory(
                     title="Select a directory of images to load")
-                if path not in self.new_filenames_list:
-                    self.new_filenames_list.append(path)
+                if path not in self.new_folders_list:
+                    self.new_folders_list.append(path)
                     self.dir_box.insert(tkinter.END, path)
 
             except FileNotFoundError:
@@ -866,15 +886,17 @@ class MainWindow:
             else:
                 self.remove_dir_button.config(state='normal')
 
+        self.new_session_info(len(self.new_folders_list),
+                              self.new_session_image_counter)
+
     def remove_dir(self):
         items = self.dir_box.curselection()
-        # items = [self.dir_box.data[int(item)] for item in items]
-        print(items)
+        # print(items)
         for item in reversed(items):
             print(item)
 
             self.dir_box.delete(item)
-            del(self.new_filenames_list[item])
+            del(self.new_folders_list[item])
 
         if not self.new_filenames_list:
             print('LOVE :) '*10)
@@ -900,8 +922,8 @@ class MainWindow:
         for item in folderlist:
             if type(item) == str:
                 # print("\t" * self.tabs, item)
-                if item not in self.new_filenames_list:
-                    self.new_filenames_list.append(item)
+                if item not in self.new_folders_list:
+                    self.new_folders_list.append(item)
 
                     folder = " " * self.tabs + item
                     self.dir_box.insert(tkinter.END, folder)
@@ -911,15 +933,41 @@ class MainWindow:
                 self.tabs -= 4
 
     # prints folder structure in tabbed form according to hierarchy
-    def print_path_list(self, tlist):
+    def _print_path_list(self, tlist):
         for item in tlist:
             # print(type(item))
             if type(item) == str:
                 print("\t" * self.tabs, item)
             else:
                 self.tabs += 1
-                self.print_path_list(item)
+                self._print_path_list(item)
                 self.tabs -= 1
+
+    def new_session_info(self, folders=0, images=0):
+        self.new_session_info_msg.set(
+            "{} folders and {} images are queued".format(folders, images))
+
+    def contains_images(self, path):
+        counter = 0
+        for file_name in os.listdir(path):
+            full_path = os.path.join(path, file_name)
+            for string in self.file_types_list:
+                if (file_name[-4:] in string):
+                    counter += 1
+                    self.new_session_image_counter += 1
+
+        if counter == 0:
+            return False
+        else:
+            return True
+
+    # scan images into temp master list
+    def scan_images(self, path):
+        for file_name in os.listdir(path):
+            full_path = os.path.join(path, file_name)
+            for string in self.file_types_list:
+                if (file_name[-4:] in string):
+                    self.temp_new_filenames_list.append(full_path)
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
