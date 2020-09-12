@@ -681,6 +681,11 @@ class MainWindow:
 
     def new_session(self):
 
+        self.new_session_info(0, 0)
+        self.new_session_image_counter = 0
+        self.new_folders_list.clear()
+        self.temp_new_filenames_list.clear()
+
         self.win_location()
         self.new_session_win = tkinter.Toplevel()
         self.new_session_win.resizable(False, False)
@@ -848,10 +853,11 @@ class MainWindow:
                 all_folders_list = []
                 all_folders_list.append(path)
 
-                print("all folders:\t", all_folders_list)
+                # print("all folders:\t", all_folders_list)
 
                 # don't add list items if they're already in the list
                 for item in all_folders_list:
+                    print(item)
                     if item in self.new_folders_list:
                         all_folders_list.remove(item)
                     else:
@@ -861,7 +867,6 @@ class MainWindow:
                 if all_folders_list:
                     # call RECURSIVE function
                     self.temp_list = self.recurs_folder_scan(all_folders_list)
-
                     # Populate self.self.dir_box with folders
                     self.populate_dir_box(self.temp_list)
 
@@ -881,6 +886,8 @@ class MainWindow:
                     self.new_folders_list.append(path)
                     self.dir_box.insert(tkinter.END, path)
 
+                self.new_session_image_counter += self.recount_images(path)
+
             except FileNotFoundError:
                 print("- Folder not added")
             else:
@@ -896,9 +903,16 @@ class MainWindow:
             print(item)
 
             self.dir_box.delete(item)
+            print()
+            print("before removing", self.new_session_image_counter)
+            self.new_session_image_counter = self.new_session_image_counter - \
+                self.recount_images(self.new_folders_list[item])
+            print("after removing", self.new_session_image_counter)
             del(self.new_folders_list[item])
+            self.new_session_info(len(self.new_folders_list),
+                                  self.new_session_image_counter)
 
-        if not self.new_filenames_list:
+        if not self.new_folders_list:
             print('LOVE :) '*10)
             self.remove_dir_button.config(state='disabled')
         # print('removed - ', self.new_filenames_list)
@@ -909,6 +923,10 @@ class MainWindow:
         for item in range(len(pathlist)):
 
             recurs_list.append(pathlist[item])
+
+            # add images in folder to counter
+            self.new_session_image_counter += self.recount_images(
+                pathlist[item])
 
             sub_paths = [folder.path for folder in os.scandir(
                 pathlist[item]) if folder.is_dir()]
@@ -947,6 +965,7 @@ class MainWindow:
         self.new_session_info_msg.set(
             "{} folders and {} images are queued".format(folders, images))
 
+    # returns True or False if images contained in folder
     def contains_images(self, path):
         counter = 0
         for file_name in os.listdir(path):
@@ -954,12 +973,25 @@ class MainWindow:
             for string in self.file_types_list:
                 if (file_name[-4:] in string):
                     counter += 1
-                    self.new_session_image_counter += 1
-
+                    # self.new_session_image_counter += 1
         if counter == 0:
             return False
         else:
             return True
+
+    # returns a COUNT of the images in the folder
+    def recount_images(self, path):
+        counter = 0
+        print("path", path)
+        for file_name in os.listdir(path):
+            full_path = os.path.join(path, file_name)
+            for string in self.file_types_list:
+                if (file_name[-4:] in string):
+                    self.new_session_image_counter += 1
+                    counter += 1
+
+        print("recount:", counter)
+        return counter
 
     # scan images into temp master list
     def scan_images(self, path):
