@@ -712,9 +712,13 @@ class MainWindow:
         dir_label = tkinter.Label(
             top_left_frame, text="Directories:", anchor='w')
         dir_label.grid(row=1, column=1, sticky='w')
-        dir_box = tkinter.Text(top_left_frame,
-                               width=30, height=10)
-        dir_box.grid(row=2, column=1, sticky='w')
+        self.dir_box = tkinter.Listbox(top_left_frame,
+                                       width=40, height=10, selectmode='extended')
+        self.dir_box.grid(row=2, column=1, sticky='e')
+        self.dir_box_scroll = tkinter.Scrollbar(
+            top_left_frame, orient='vertical', command=self.dir_box.yview)
+        self.dir_box_scroll.grid(row=2, column=2, sticky='nsw')
+        self.dir_box.config(yscrollcommand=self.dir_box_scroll.set)
 
         top_right_frame.grid_rowconfigure(0, weight=1)
         top_right_frame.grid_rowconfigure(1, weight=1)
@@ -748,9 +752,9 @@ class MainWindow:
         browse_separator.grid(row=6, column=1, sticky='we', columnspan=2)
 
         minus_font = tkinter.font.Font(family="Verdana", size=16)
-        remove_dir = tkinter.Button(
-            top_right_frame, text="-", font=minus_font, state='disabled')
-        remove_dir.grid(row=7, column=1)
+        self.remove_dir_button = tkinter.Button(
+            top_right_frame, text="-", font=minus_font, state='disabled', command=self.remove_dir)
+        self.remove_dir_button.grid(row=7, column=1)
         remove_dir_label = tkinter.Label(
             top_right_frame, text="Remove\nDirectory", anchor='w', justify='left')
         remove_dir_label.grid(row=7, column=2, sticky='w')
@@ -814,89 +818,99 @@ class MainWindow:
         bottom_frame.grid(row=2, column=0, sticky='we', columnspan=2)
 
     def browse_dir(self):
-        self.new_filenames_list.clear()
+        # self.new_filenames_list.clear()
 
         if self.incl_subdirs_var.get() == 1:
             # print("Include subdirectories")
-            path = tkinter.filedialog.askdirectory(
-                title="Select a directory of images to load (Includes Sub-directories)")
-            list_subd_paths = [
-                folder.path for folder in os.scandir(path) if folder.is_dir()]
+            try:
+                path = tkinter.filedialog.askdirectory(
+                    title="Select a directory of images to load (Includes Sub-directories)")
+                list_subd_paths = [
+                    folder.path for folder in os.scandir(path) if folder.is_dir()]
 
-            # TODO scan all dirs for subdirs and add to a list that
-            # will get scanned later
+                all_folders_list = []
+                all_folders_list.append(path)
 
-            # print(path)
-            all_folders_list = []
-            all_folders_list.append(path)
+                print("all folders:\t", all_folders_list)
 
-            # self.temp_list.append(path)
-            self.temp_list = self.recurs_folder_scan(all_folders_list)
-            print()
-            self.print_path_list(self.temp_list)
-            # print("temp list -", self.temp_list)
+                # don't add list items if they're already in the list
+                for item in all_folders_list:
+                    if item in self.new_filenames_list:
+                        all_folders_list.remove(item)
 
-            # sub_paths = [folder.path for folder in os.scandir(pathlist[item]) if folder.is_dir()]
-            # for folder in sub_paths:
-            #     sub_folder = os.scandir(folder)
-            #     if len(sub_folder) > 0:
-            #         print(sub_folder)
+                if all_folders_list:
+                    # call RECURSIVE function
+                    self.temp_list = self.recurs_folder_scan(all_folders_list)
 
-            # for folder_path in
+                    # Populate self.self.dir_box with folders
+                    self.populate_dir_box(self.temp_list)
 
-            # for file_name in os.listdir(path):
-            #     full_path = os.path.join(path, file_name)
+            except PermissionError:
+                raise
+                print("- Permission Error")
+            except FileNotFoundError:
+                print("- File not found")
+            else:
+                self.remove_dir_button.config(state='normal')
 
-            #     # for every extension type in the reference list
-            #     for string in self.file_types_list:
-            #         # if the extension exists in the element
-            #         if (file_name[-4:] in string):
-            #             # then add it to the list
-            #             self.new_filenames_list.append(full_path)
-
-            # self.total_images = len(self.new_filenames_list)
-            # assert self.total_images >= 1
-
-            # print(list_subd_paths)
         else:
-            # returns tuple of image paths
-            path = tkinter.filedialog.askdirectory(
-                title="Select a directory of images to load")
-            # print("clicked +")
+            try:
+                path = tkinter.filedialog.askdirectory(
+                    title="Select a directory of images to load")
+                if path not in self.new_filenames_list:
+                    self.new_filenames_list.append(path)
+                    self.dir_box.insert(tkinter.END, path)
 
-        # print(path)
-        print()
+            except FileNotFoundError:
+                print("- Folder not added")
+            else:
+                self.remove_dir_button.config(state='normal')
 
+    def remove_dir(self):
+        items = self.dir_box.curselection()
+        # items = [self.dir_box.data[int(item)] for item in items]
+        print(items)
+        for item in reversed(items):
+            print(item)
+
+            self.dir_box.delete(item)
+            del(self.new_filenames_list[item])
+
+        if not self.new_filenames_list:
+            print('LOVE :) '*10)
+            self.remove_dir_button.config(state='disabled')
+        # print('removed - ', self.new_filenames_list)
+
+    # recursive function to return sub-folder structure in list form
     def recurs_folder_scan(self, pathlist):
-        # if len(pathlist) > 0:
-        #     print("pathlist:", pathlist)
-
-        # for item in range(len(pathlist))
-
         recurs_list = []
         for item in range(len(pathlist)):
-            # if len(pathlist) > 0:
-            #     print("\tpathlist item:", item, pathlist[item])
 
-            # self.temp_list.append(pathlist[item])
-            # print("inside -", self.temp_list)
             recurs_list.append(pathlist[item])
 
             sub_paths = [folder.path for folder in os.scandir(
                 pathlist[item]) if folder.is_dir()]
 
             if len(sub_paths) > 0:
-                # print("\t\tsub_paths:", sub_paths)
-                # print("item:", item)
-
                 recurs_list.append(self.recurs_folder_scan(sub_paths))
-                # print(recurs_list)
-                # print()
-            # self.temp_list.append(recurs_list)
-            # print(recurs_list)
-        # print()
+
         return recurs_list
 
+    def populate_dir_box(self, folderlist):
+        for item in folderlist:
+            if type(item) == str:
+                # print("\t" * self.tabs, item)
+                if item not in self.new_filenames_list:
+                    self.new_filenames_list.append(item)
+
+                    folder = " " * self.tabs + item
+                    self.dir_box.insert(tkinter.END, folder)
+            else:
+                self.tabs += 4
+                self.populate_dir_box(item)
+                self.tabs -= 4
+
+    # prints folder structure in tabbed form according to hierarchy
     def print_path_list(self, tlist):
         for item in tlist:
             # print(type(item))
