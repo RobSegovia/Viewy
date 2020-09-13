@@ -13,6 +13,8 @@ import random
 import requests
 import webbrowser
 import subprocess
+import threading
+import time
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
@@ -100,6 +102,8 @@ class MainWindow:
         self.temp_list = []
         self.tabs = 0
         self.time_interval_list = []
+        self.current_interval = 0
+        # self.tic = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -894,6 +898,35 @@ class MainWindow:
         self.image_index = 0
         self.total_images = self.new_session_image_counter
         self.load()
+
+        # convert intervals from mins:secs to all secs
+        self.interval_in_seconds()
+        # set the first interval
+        self.current_interval = self.time_interval_list[0]
+        timer = threading.Timer(0, self.run_timer)
+        timer.start()
+
+    def interval_in_seconds(self):
+        print(self.time_interval_list)
+        temp_list = []
+        for item in self.time_interval_list:
+            total_secs = item[0] * 60 + item[1]
+            temp_list.append(total_secs)
+
+        self.time_interval_list = []
+        self.time_interval_list = temp_list.copy()
+        print(self.time_interval_list)
+
+    def run_timer(self):
+        time_start = time.time()
+        tic = 0
+        while tic < self.current_interval:
+            tic += 1
+            time.sleep(1)
+            print("Seconds elapsed:", tic)
+        time_end = time.time()
+        print()
+        print("Time elapsed:", (time_end - time_start))
 
     def add_dir(self):
         # self.new_filenames_list.clear()
