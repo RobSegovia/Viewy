@@ -687,6 +687,7 @@ class MainWindow:
         self.new_session_image_counter = 0
         self.new_folders_list.clear()
         self.temp_new_filenames_list.clear()
+        self.time_interval_list.clear()
         self.incl_subdirs_var.set(0)
 
         self.win_location()
@@ -716,7 +717,7 @@ class MainWindow:
         top_left_frame.grid_rowconfigure(1, weight=1)
         top_left_frame.grid_rowconfigure(2, weight=1)
         top_left_frame.grid_rowconfigure(3, weight=1)
-        top_left_frame.grid_columnconfigure(0, weight=1)
+        top_left_frame.grid_columnconfigure(0, weight=2)
         top_left_frame.grid_columnconfigure(1, weight=1)
         top_left_frame.grid_columnconfigure(2, weight=1)
 
@@ -725,11 +726,22 @@ class MainWindow:
         dir_label.grid(row=1, column=1, sticky='w')
         self.dir_box = tkinter.Listbox(top_left_frame,
                                        width=40, height=10, selectmode='extended')
-        self.dir_box.grid(row=2, column=1, sticky='e')
-        self.dir_box_scroll = tkinter.Scrollbar(
-            top_left_frame, orient='vertical', command=self.dir_box.yview)
-        self.dir_box_scroll.grid(row=2, column=2, sticky='nsw')
-        self.dir_box.config(yscrollcommand=self.dir_box_scroll.set)
+        self.dir_box.grid(row=2, column=1, sticky='we')
+        dir_box_scrolly = tkinter.Scrollbar(
+            top_left_frame,
+            orient='vertical',
+            width=14,
+            command=self.dir_box.yview)
+        dir_box_scrolly.grid(row=2, column=2, sticky='nsw')
+        dir_box_scrollx = tkinter.Scrollbar(
+            top_left_frame,
+            orient='horizontal',
+            width=14,
+            command=self.dir_box.xview)
+        dir_box_scrollx.grid(row=3, column=1, sticky='nwe')
+        self.dir_box.config(
+            yscrollcommand=dir_box_scrolly.set,
+            xscrollcommand=dir_box_scrollx.set)
 
         top_right_frame.grid_rowconfigure(0, weight=1)
         top_right_frame.grid_rowconfigure(1, weight=1)
@@ -747,7 +759,7 @@ class MainWindow:
 
         plus_font = tkinter.font.Font(family="Verdana", size=14)
         browse_button = tkinter.Button(
-            top_right_frame, text="+", font=plus_font, command=self.browse_dir)
+            top_right_frame, text="+", font=plus_font, command=self.add_dir)
         browse_button.grid(row=3, column=1)
         # grab focus after closing Browse window
         self.new_session_win.grab_set()
@@ -764,17 +776,17 @@ class MainWindow:
 
         minus_font = tkinter.font.Font(family="Verdana", size=16)
         self.remove_dir_button = tkinter.Button(
-            top_right_frame, text="-", font=minus_font, state='disabled', command=self.remove_dir)
+            top_right_frame, text="–", font=minus_font, state='disabled', command=self.remove_dir)
         self.remove_dir_button.grid(row=7, column=1)
-        remove_dir_label = tkinter.Label(
-            top_right_frame, text="Remove\nDirectory", anchor='w', justify='left')
-        remove_dir_label.grid(row=7, column=2, sticky='w')
+        self.remove_dir_label = tkinter.Label(
+            top_right_frame, text="Remove\nDirectory", anchor='w', justify='left', state='disabled')
+        self.remove_dir_label.grid(row=7, column=2, sticky='w')
 
         # mid_separator = tkinter.ttk.Separator(
         #     , orient='horizontal')
         # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
 
-        bottom_left_frame.grid_rowconfigure(0, weight=4)
+        bottom_left_frame.grid_rowconfigure(0, weight=80)
         bottom_left_frame.grid_rowconfigure(1, weight=4)
         bottom_left_frame.grid_rowconfigure(2, weight=4)
         bottom_left_frame.grid_rowconfigure(3, weight=1)
@@ -791,8 +803,8 @@ class MainWindow:
         bottom_left_frame.grid_columnconfigure(7, weight=4)
 
         add_time_label = tkinter.Label(
-            bottom_left_frame, text="  Add time intervals per image:")
-        add_time_label.grid(row=1, column=1, sticky='w', columnspan=5)
+            bottom_left_frame, text="Add time intervals per image:")
+        add_time_label.grid(row=1, column=1, sticky='sw', columnspan=5)
 
         self.minutes_box = tkinter.Spinbox(
             bottom_left_frame, width=2, from_=0, to=59)
@@ -808,9 +820,9 @@ class MainWindow:
             bottom_left_frame, text="seconds", anchor='w')
         seconds_label.grid(row=2, column=4, sticky='w')
 
-        add_time_button = tkinter.Button(
-            bottom_left_frame, text="Add", command=self.add_timed_interval)
-        add_time_button.grid(row=2, column=5, sticky='e')
+        self.add_time_button = tkinter.Button(
+            bottom_left_frame, text="Add", command=self.add_timed_interval, state='disabled')
+        self.add_time_button.grid(row=2, column=5, sticky='e')
 
         self.interval_warning = tkinter.Label(
             bottom_left_frame,
@@ -818,21 +830,34 @@ class MainWindow:
             foreground='red')
         self.interval_warning.grid(row=3, column=1, columnspan=5, sticky='we')
 
+        self.move_interval_up_btn = tkinter.Button(
+            bottom_left_frame,
+            text=" ↑ ",
+            command=self.move_interval_up,
+            state='disabled')
+        self.move_interval_up_btn.grid(row=4, column=1, sticky='e')
+        self.move_interval_down_btn = tkinter.Button(
+            bottom_left_frame,
+            text=" ↓ ",
+            command=self.move_interval_down,
+            state='disabled')
+        self.move_interval_down_btn.grid(row=5, column=1, sticky='e')
+
         self.intervals_box = tkinter.Listbox(
-            bottom_left_frame, width=28, height=6, selectmode='extended')
-        self.intervals_box.grid(row=4, column=1, rowspan=2,
-                                columnspan=4, sticky='e')
+            bottom_left_frame, width=18, height=6)
+        self.intervals_box.grid(row=4, column=2, rowspan=2,
+                                columnspan=3, sticky='nse')
         intervals_box_scroll = tkinter.Scrollbar(
             bottom_left_frame, command=self.intervals_box.yview)
         intervals_box_scroll.grid(row=4, column=5, rowspan=2, sticky='nsw')
         self.intervals_box.config(yscrollcommand=intervals_box_scroll.set)
 
-        remove_interval_button = tkinter.Button(
-            bottom_left_frame, text=" - ", state='disabled', command=self.remove_interval)
-        remove_interval_button.grid(row=4, column=6, sticky='sw')
-        remove_interval_label = tkinter.Label(
-            bottom_left_frame, text="Remove\nInterval", anchor='w', justify='left')
-        remove_interval_label.grid(row=5, column=6, sticky='nw')
+        self.remove_interval_button = tkinter.Button(
+            bottom_left_frame, text=" – ", state='disabled', command=self.remove_interval)
+        self.remove_interval_button.grid(row=4, column=6, sticky='sw')
+        self.remove_interval_label = tkinter.Label(
+            bottom_left_frame, text="Remove\nInterval", anchor='w', justify='left', state='disabled')
+        self.remove_interval_label.grid(row=5, column=6, sticky='nw')
 
         bottom_right_frame.grid_rowconfigure(0, weight=3)
         bottom_right_frame.grid_rowconfigure(1, weight=1)
@@ -841,7 +866,7 @@ class MainWindow:
         bottom_right_frame.grid_columnconfigure(1, weight=1)
         bottom_right_frame.grid_columnconfigure(2, weight=1)
 
-        start_button = tkinter.Button(
+        self.start_button = tkinter.Button(
             bottom_right_frame,
             text="Start",
             bd=4,
@@ -849,13 +874,13 @@ class MainWindow:
             pady=20,
             state='disabled',
             command=self.start_session)
-        start_button.grid(row=1, column=1)
+        self.start_button.grid(row=1, column=1)
 
         self.new_session_info_msg.set(
-            "Only folders that contain images will be queued")
+            "Folders without images will be filtered out")
         bottom_frame = tkinter.Label(
             self.new_session_win, textvariable=self.new_session_info_msg)
-        bottom_frame.grid(row=2, column=0, sticky='we', columnspan=2)
+        bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
 
     def start_session(self):
         self.new_session_win.destroy()
@@ -870,7 +895,7 @@ class MainWindow:
         self.total_images = self.new_session_image_counter
         self.load()
 
-    def browse_dir(self):
+    def add_dir(self):
         # self.new_filenames_list.clear()
 
         if self.incl_subdirs_var.get() == 1:
@@ -888,7 +913,7 @@ class MainWindow:
 
                 # don't add list items if they're already in the list
                 for item in all_folders_list:
-                    print(item)
+                    # print(item)
                     if item in self.new_folders_list:
                         all_folders_list.remove(item)
                     else:
@@ -908,6 +933,8 @@ class MainWindow:
                 print("- File not found")
             else:
                 self.remove_dir_button.config(state='normal')
+                self.remove_dir_label.config(state='normal')
+                self.add_time_button.config(state='normal')
 
         else:
             try:
@@ -923,6 +950,8 @@ class MainWindow:
                 print("- Folder not added")
             else:
                 self.remove_dir_button.config(state='normal')
+                self.remove_dir_label.config(state='normal')
+                self.add_time_button.config(state='normal')
 
         self.new_session_info(len(self.new_folders_list),
                               self.new_session_image_counter)
@@ -946,10 +975,8 @@ class MainWindow:
         if not self.new_folders_list:
             # print('LOVE :) '*10)
             self.remove_dir_button.config(state='disabled')
+            self.remove_dir_label.config(state='disabled')
         # print('removed - ', self.new_filenames_list)
-
-    def remove_interval(self):
-        print("REMOVED button pushed")
 
     # recursive function to return sub-folder structure in list form
     def recurs_folder_scan(self, pathlist):
@@ -1016,7 +1043,7 @@ class MainWindow:
     # returns a COUNT of the images in the folder
     def recount_images(self, path):
         counter = 0
-        print("path", path)
+        # print("path", path)
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
             for string in self.file_types_list:
@@ -1063,8 +1090,72 @@ class MainWindow:
                 self.interval_warning_msg.set("")
                 if (int_minutes > 0 and int_seconds > 0) or (int_minutes > 0 and int_seconds == 0) or (int_minutes == 0 and int_seconds > 0):
                     self.time_interval_list.append((int_minutes, int_seconds))
+                    interval = "  {} mins : {} secs".format(
+                        int_minutes, int_seconds)
+                    self.intervals_box.insert('end', interval)
+                    self.move_interval_up_btn.config(state='normal')
+                    self.move_interval_down_btn.config(state='normal')
+                    self.remove_interval_button.config(state='normal')
+                    self.remove_interval_label.config(state='normal')
+                    if self.new_folders_list:
+                        self.start_button.config(state='normal')
+
                 self.reset_spinboxes()
                 print(self.time_interval_list)
+
+    def move_interval_up(self):
+        items = self.intervals_box.curselection()
+        print(items)
+        for item in reversed(items):
+            print(item)
+            if item == 0:
+                continue
+            interval = self.intervals_box.get(item)
+            # del and insert in listbox
+            self.intervals_box.delete(item)
+            self.intervals_box.insert(item-1, interval)
+            # del and insert in list
+            self.time_interval_list.insert(
+                item-1, self.time_interval_list[item])
+            del(self.time_interval_list[item+1])
+
+            self.intervals_box.activate(item-1)
+            self.intervals_box.select_set(item-1)
+        print('move up', self.time_interval_list)
+
+    def move_interval_down(self):
+        items = self.intervals_box.curselection()
+        print(items)
+        for item in reversed(items):
+            print(item)
+            if item == self.intervals_box.size()-1:
+                continue
+            interval = self.intervals_box.get(item)
+            # del and insert in listbox
+            self.intervals_box.delete(item)
+            self.intervals_box.insert(item+1, interval)
+            # del and insert in list
+            self.time_interval_list.insert(
+                item, self.time_interval_list[item+1])
+            del(self.time_interval_list[item+2])
+
+            self.intervals_box.activate(item+1)
+            self.intervals_box.select_set(item+1)
+        print('move down', self.time_interval_list)
+
+    def remove_interval(self):
+        items = self.intervals_box.curselection()
+
+        for item in reversed(items):
+            self.intervals_box.delete(item)
+            del(self.time_interval_list[item])
+
+        if not self.time_interval_list:
+            self.move_interval_up_btn.config(state='disabled')
+            self.move_interval_down_btn.config(state='disabled')
+            self.remove_interval_button.config(state='disabled')
+            self.remove_interval_label.config(state='disabled')
+            self.start_button.config(state='disabled')
 
     def reset_spinboxes(self):
         self.minutes_box.delete(0, 'end')
