@@ -50,6 +50,8 @@ class MainWindow:
     image_scrollbar = None
 
     def __init__(self, mainWindow):
+        # self.exit_threads = threading.Event()
+
         self.screen_width = mainWindow.winfo_screenwidth()
         self.screen_height = mainWindow.winfo_screenheight()
         # for lock aspect ratio check button
@@ -106,7 +108,7 @@ class MainWindow:
         self.current_interval = 0
         self.timer_paused = True
         self.timer_activated = False
-        # self.tic = 0
+        self.tic = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -914,8 +916,11 @@ class MainWindow:
         self.interval_in_seconds()
         # set the first interval
         self.current_interval = self.time_interval_list[0]
-        timer = threading.Timer(0, self.run_timer)
+
         self.timer_activated = True
+
+        timer = threading.Timer(0, self.run_timer)
+        timer.setDaemon(True)  # kills thread when program is shutdown
         timer.start()
 
     def add_dir(self):
@@ -1202,9 +1207,11 @@ class MainWindow:
 
         if event.keysym == 'Right' and self.image_exists:
             self.next_image = 'Right'
+            self.tic = 0
             self.load()
         elif event.keysym == 'Left' and self.image_exists:
             self.next_image = 'Left'
+            self.tic = 0
             self.load()
 
         # toggle pause/continue state for timer
@@ -1218,17 +1225,17 @@ class MainWindow:
             print("Continue timer >")
 
     def run_timer(self):
-        # TODO - set this condition to exit when done with session
-        tic = 0
+
+        self.tic = 0
         while self.timer_activated:
 
             if not self.timer_paused:
 
                 time.sleep(1)
-                tic += 1
-                print("Seconds elapsed:", tic)
+                self.tic += 1
+                print("Seconds elapsed:", self.tic)
 
-                if tic % self.current_interval == 0:
+                if self.tic % self.current_interval == 0:
                     mainWindow.event_generate(
                         "<Key>", keysym='Right', when='tail')
 
@@ -1789,3 +1796,4 @@ if __name__ == "__main__":
     app = MainWindow(mainWindow)
     # load program window
     mainWindow.mainloop()
+    # app.exit_threads.set()
