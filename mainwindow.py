@@ -112,6 +112,7 @@ class MainWindow:
         self.current_interval_copy = 0
         self.time_start = 0.0
         self.time_diff = 0.0
+        self.timer_window_exists = False
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -717,6 +718,8 @@ class MainWindow:
         self.new_session_win.geometry("{}x{}+{}+{}".format(440, 450,
                                                            self.win_x_offset+80, self.win_y_offset+80))
         # self.new_session_win.attributes('-topmost', 'true')
+        # removes move/close functionality
+        self.new_session_win.overrideredirect(True)
 
         self.new_session_win.grid_rowconfigure(0, weight=10)
         self.new_session_win.grid_rowconfigure(1, weight=10)
@@ -921,12 +924,11 @@ class MainWindow:
         self.current_interval = self.time_interval_list[0]
 
         self.timer_activated = True
+        self.timer_window_exists = True
 
-        # self.run_timer()
-
-        # timer = threading.Timer(0, self.run_timer)
-        # timer.setDaemon(True)  # kills thread when program is shutdown
-        # timer.start()
+        # self.create_timer_window()
+        # self.canvas.tag_raise('timer_window')
+        # self.timer_window.lift()
 
     def add_dir(self):
         # self.new_filenames_list.clear()
@@ -1237,6 +1239,7 @@ class MainWindow:
                 print("Pause timer ||")
             elif event.keysym == 'space' and self.timer_paused:
                 self.timer_paused = False  # un-pause timer
+                # have to minus 1 sec to get correct interval
                 self.time_start = time.time() - 1
                 # backup the current value
                 self.current_interval_copy = self.current_interval
@@ -1247,6 +1250,7 @@ class MainWindow:
                 print("Continue timer >")
 
     def reset_timer(self):
+        # have to minus 1 sec to get correct interval
         self.time_start = time.time() - 1
         self.time_diff = 0.0
         # reset current interval too in case timer had been paused
@@ -1275,6 +1279,20 @@ class MainWindow:
     def prev_interval(self):
         mainWindow.event_generate('<Key>', keysym='a', when='tail')
         print("Previous interval ←")
+
+    def create_timer_window(self):
+
+        # self.timer_window = self.canvas.create_rectangle(
+        #     0, 0, 250, 100, fill='green', tags='timer_window')
+        # print('rect created')
+
+        # TODO - another option is to try to create a Toplevel window,
+        # which stays topmost and has no titlebar; it will become transparent
+        # when hovered out, and maybe even allow custom transparency
+        button1 = tkinter.Button(self.canvas, text="Quit", anchor='w')
+        button1.configure(width=10, activebackground="#33B5E5")
+        button1_window = self.canvas.create_window(
+            10, 10, anchor='nw', window=button1)
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
@@ -1782,6 +1800,11 @@ class MainWindow:
             self.tk_image.image = self.tk_image
 
         self.initial_scroll_pos = True
+
+        if self.timer_window_exists:
+            self.create_timer_window()
+        #     self.canvas.tag_raise('timer_window')
+        #     self.timer_window.lift()
 
         # print("Win width:", mainWindow.winfo_width(),
         #       "Img width:", self.image_width)
