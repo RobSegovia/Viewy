@@ -69,6 +69,7 @@ class MainWindow:
         self.total_images = None
         self.image_exists = False
         self.new_session_image_counter = 0
+        self.next_image = None
 
         self.load_image_var = tkinter.IntVar()
         self.load_dir_var = tkinter.IntVar()
@@ -103,6 +104,8 @@ class MainWindow:
         self.tabs = 0
         self.time_interval_list = []
         self.current_interval = 0
+        self.timer_paused = True
+        self.timer_activated = False
         # self.tic = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -117,7 +120,8 @@ class MainWindow:
                                                  self.win_x_offset,
                                                  self.win_y_offset))
         mainWindow.configure()
-        mainWindow.bind('<Key>', self.load)
+        # mainWindow.bind('<Key>', self.load)
+        mainWindow.bind('<Key>', self.which_key)
         mainWindow.bind('<MouseWheel>', self.zoom_in)
 
         self.win_location()  # TODO del ???
@@ -506,11 +510,18 @@ class MainWindow:
             self.load_dir_var.set(0)
 
         # if a key has been pressed, cycle to next/prev image
-        if event is not None:
-            if event.keysym == 'Right' and self.image_index < len(self.filenames_list) - 1:
+        # if event is not None:
+        #     if event.keysym == 'Right' and self.image_index < len(self.filenames_list) - 1:
+        #         self.image_index += 1
+        #     elif event.keysym == 'Left' and self.image_index > 0:
+        #         self.image_index -= 1
+        if self.next_image is not None:
+            if self.next_image == 'Right' and self.image_index < len(self.filenames_list) - 1:
                 self.image_index += 1
-            elif event.keysym == 'Left' and self.image_index > 0:
+                self.next_image = None
+            elif self.next_image == 'Left' and self.image_index > 0:
                 self.image_index -= 1
+                self.next_image = None
 
         # if AUTO ZOOM is OFF
         if self.image_exists and self.zoom_auto_var.get() == 0:
@@ -904,29 +915,8 @@ class MainWindow:
         # set the first interval
         self.current_interval = self.time_interval_list[0]
         timer = threading.Timer(0, self.run_timer)
+        self.timer_activated = True
         timer.start()
-
-    def interval_in_seconds(self):
-        print(self.time_interval_list)
-        temp_list = []
-        for item in self.time_interval_list:
-            total_secs = item[0] * 60 + item[1]
-            temp_list.append(total_secs)
-
-        self.time_interval_list = []
-        self.time_interval_list = temp_list.copy()
-        print(self.time_interval_list)
-
-    def run_timer(self):
-        time_start = time.time()
-        tic = 0
-        while tic < self.current_interval:
-            tic += 1
-            time.sleep(1)
-            print("Seconds elapsed:", tic)
-        time_end = time.time()
-        print()
-        print("Time elapsed:", (time_end - time_start))
 
     def add_dir(self):
         # self.new_filenames_list.clear()
@@ -1195,6 +1185,58 @@ class MainWindow:
         self.minutes_box.insert('end', 0)
         self.seconds_box.delete(0, 'end')
         self.seconds_box.insert('end', 0)
+
+    def interval_in_seconds(self):
+        print(self.time_interval_list)
+        temp_list = []
+        for item in self.time_interval_list:
+            total_secs = item[0] * 60 + item[1]
+            temp_list.append(total_secs)
+
+        self.time_interval_list = []
+        self.time_interval_list = temp_list.copy()
+        print(self.time_interval_list)
+
+    def which_key(self, event):
+        print("Which key: ", event.keysym)
+
+        if event.keysym == 'Right' and self.image_exists:
+            self.next_image = 'Right'
+            self.load()
+        elif event.keysym == 'Left' and self.image_exists:
+            self.next_image = 'Left'
+            self.load()
+
+        # toggle pause/continue state for timer
+        if event.keysym == 'space' and not self.timer_paused:
+            self.timer_paused = True
+            print("Pause timer ||")
+        elif event.keysym == 'space' and self.timer_paused:
+            self.timer_paused = False
+            # timer = threading.Timer(0, self.run_timer)
+            # timer.start()
+            print("Continue timer >")
+
+    def run_timer(self):
+        # TODO - set this condition to exit when done with session
+        tic = 0
+        while self.timer_activated:
+
+            if not self.timer_paused:
+
+                time.sleep(1)
+                tic += 1
+                print("Seconds elapsed:", tic)
+
+                if tic % self.current_interval == 0:
+                    mainWindow.event_generate(
+                        "<Key>", keysym='Right', when='tail')
+
+    def next_interval(self):
+        print("Next interval →")
+
+    def prev_interval(self):
+        print("Previous interval ←")
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
