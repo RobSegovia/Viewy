@@ -105,10 +105,13 @@ class MainWindow:
         self.temp_list = []
         self.tabs = 0
         self.time_interval_list = []
+        self.current_interval_index = 0
         self.current_interval = 0
         self.timer_paused = True
         self.timer_activated = False
-        self.tic = 0
+        self.current_interval_copy = 0
+        self.time_start = 0.0
+        self.time_diff = 0.0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -919,9 +922,11 @@ class MainWindow:
 
         self.timer_activated = True
 
-        timer = threading.Timer(0, self.run_timer)
-        timer.setDaemon(True)  # kills thread when program is shutdown
-        timer.start()
+        # self.run_timer()
+
+        # timer = threading.Timer(0, self.run_timer)
+        # timer.setDaemon(True)  # kills thread when program is shutdown
+        # timer.start()
 
     def add_dir(self):
         # self.new_filenames_list.clear()
@@ -1205,44 +1210,70 @@ class MainWindow:
     def which_key(self, event):
         print("Which key: ", event.keysym)
 
-        if event.keysym == 'Right' and self.image_exists:
-            self.next_image = 'Right'
-            self.tic = 0
-            self.load()
-        elif event.keysym == 'Left' and self.image_exists:
-            self.next_image = 'Left'
-            self.tic = 0
-            self.load()
+        if self.image_exists:
 
-        # toggle pause/continue state for timer
-        if event.keysym == 'space' and not self.timer_paused:
-            self.timer_paused = True
-            print("Pause timer ||")
-        elif event.keysym == 'space' and self.timer_paused:
-            self.timer_paused = False
-            # timer = threading.Timer(0, self.run_timer)
-            # timer.start()
-            print("Continue timer >")
+            if event.keysym == 'Right':
+                self.next_image = 'Right'
+                self.load()
+                self.reset_timer()
+            elif event.keysym == 'Left':
+                self.next_image = 'Left'
+                self.load()
+                self.reset_timer()
+            elif event.keysym == 'a':
+                if self.current_interval > 0:
+                    self.current_interval_index -= 1
+                    self.current_interval = self.time_interval_list[self.current_interval_index]
+                    print("Current interval:", self.current_interval)
+            elif event.keysym == 's':
+                if self.current_interval < len(self.time_interval_list):
+                    self.current_interval_index += 1
+                    self.current_interval = self.time_interval_list[self.current_interval_index]
+                    print("Current interval:", self.current_interval)
+
+            # toggle pause/continue state for timer
+            if event.keysym == 'space' and not self.timer_paused:
+                self.timer_paused = True
+                print("Pause timer ||")
+            elif event.keysym == 'space' and self.timer_paused:
+                self.timer_paused = False  # un-pause timer
+                self.time_start = time.time() - 1
+                # backup the current value
+                self.current_interval_copy = self.current_interval
+                # calculate what's left of interval after pausing
+                if self.time_diff > 0:
+                    self.current_interval -= self.time_diff
+                self.run_timer()
+                print("Continue timer >")
+
+    def reset_timer(self):
+        self.time_start = time.time() - 1
+        self.time_diff = 0.0
+        # reset current interval too in case timer had been paused
+        self.current_interval = self.time_interval_list[self.current_interval_index]
 
     def run_timer(self):
 
-        self.tic = 0
-        while self.timer_activated:
+        if not self.timer_paused:
 
-            if not self.timer_paused:
+            self.time_diff = time.time() - self.time_start
+            print("\tSeconds elapsed: {:.0f}".format(self.time_diff))
 
-                time.sleep(1)
-                self.tic += 1
-                print("Seconds elapsed:", self.tic)
+            if self.time_diff >= self.current_interval:
+                # reset the interval
+                self.current_interval = self.current_interval_copy
+                mainWindow.event_generate(
+                    "<Key>", keysym='Right', when='tail')
 
-                if self.tic % self.current_interval == 0:
-                    mainWindow.event_generate(
-                        "<Key>", keysym='Right', when='tail')
+            # run time check again in 1 sec
+            self.canvas.after(1000, self.run_timer)
 
     def next_interval(self):
+        mainWindow.event_generate('<Key>', keysym='s', when='tail')
         print("Next interval →")
 
     def prev_interval(self):
+        mainWindow.event_generate('<Key>', keysym='a', when='tail')
         print("Previous interval ←")
 
     def edit_session(self):
@@ -1635,8 +1666,8 @@ class MainWindow:
                 # left side of scrollbar
                 self.new_posx = self.horz_scrollbar.get()[0]
                 self.new_posy = self.vert_scrollbar.get()[0]
-                print("Scroll initial pos X:", self.new_posx)
-                print("Scroll initial pos Y:", self.new_posy)
+                # print("Scroll initial pos X:", self.new_posx)
+                # print("Scroll initial pos Y:", self.new_posy)
                 self.now_px = event.x
                 self.now_py = event.y
                 self.initial_scroll_posx = False
@@ -1679,9 +1710,9 @@ class MainWindow:
                 elif self.diffy < 0 and self.vert_scrollbar.get()[0] >= 0:
                     self.new_posy = self.new_posy + self.img_pxy_percent
 
-                print("new pos X:", self.new_posx)
-                print("new pos Y:", self.new_posy)
-                print()
+                # print("new pos X:", self.new_posx)
+                # print("new pos Y:", self.new_posy)
+                # print()
 
                 if self.new_posx > 1:
                     self.new_posx = 1
