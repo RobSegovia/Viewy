@@ -223,13 +223,14 @@ class MainWindow:
                 2: None,
                 3: "Search this image on Google",
                 4: None,
-                5: "Resize the image by custom amount",
-                6: "Add a vignette border to the image",
-                7: "Brighten the image",
-                8: "Apply Levels - Darken to the image",
-                9: "Apply a Median filter to the image",
-                10: None,
-                11: "Randomize the order of the images"
+                5: "Add a vignette border to the image",
+                6: "Brighten the image",
+                7: "Darken the image",
+                8: "Apply Levels - Brighten the image",
+                9: "Apply Levels - Darken the image",
+                10: "Apply a Median filter to the image",
+                11: None,
+                12: "Randomize the order of the images"
             },
             3: {
                 0: "Pause or Continue the timer",
@@ -324,10 +325,13 @@ class MainWindow:
         self.image_menu.add_command(
             label="Search Image on Google", command=self.search_google)
         self.image_menu.add_separator()
-        self.image_menu.add_command(
-            label="Resize Image", command=self.resize_image)
+        # self.image_menu.add_command(
+        #     label="Resize Image", command=self.resize_image)
         self.image_menu.add_command(label="Vignette Border")
         self.image_menu.add_command(label="Brighten", command=self.brighten)
+        self.image_menu.add_command(label="Darken", command=self.darken)
+        self.image_menu.add_command(
+            label="Levels - Brighten", command=self.levels_brighten)
         self.image_menu.add_command(
             label="Levels - Darken", command=self.levels_darken)
         self.image_menu.add_command(label="Median", command=self.median)
@@ -1272,6 +1276,14 @@ class MainWindow:
                     self.recalc_interval()
             elif event.keysym == 'h':
                 self.hide_show_timer_bar()
+            elif event.keysym == 'b':
+                self.brighten()
+            elif event.keysym == 'v':
+                self.darken()
+            elif event.keysym == 'l':
+                self.levels_brighten()
+            elif event.keysym == 'k':
+                self.levels_darken()
 
             # toggle pause/continue state for timer
             if event.keysym == 'space' and not self.timer_paused:
@@ -1476,6 +1488,7 @@ class MainWindow:
         self.refresh_image()
 
     def rotate_amount(self):
+        # TODO it rotates but corners are cut off
         # image_center = tuple(numpy.array(self.cv2_image.shape[1::-1]) / 2)
         # rotate_matrix = cv2.getRotationMatrix2D(image_center, -90, 1.0)
         # self.cv2_image = cv2.warpAffine(self.cv2_image, rotate_matrix,
@@ -1483,9 +1496,6 @@ class MainWindow:
         pass
 
     def image_info(self):
-        # TODO add a popup window with info about image...size, name, etc
-        # tkinter.messagebox.showinfo(
-        #     "Image Information", "Is this the message?")
         self.win_location()
         popup = tkinter.Toplevel()
         popup.title('Image Info')
@@ -1585,17 +1595,43 @@ class MainWindow:
         self.canvas.delete("image")
         self.refresh_image()
 
-    def brighten(self):
-        pass
+    def brighten(self, value=10):
+
+        bright_value = numpy.array([value, value, value], dtype=numpy.float32)
+        self.cv2_image = numpy.clip(self.cv2_image + bright_value,
+                                    0, 255).astype(numpy.uint8)
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
+
+    def darken(self, value=10):
+        dark_value = numpy.array([value, value, value], dtype=numpy.float32)
+        self.cv2_image = numpy.clip(self.cv2_image - dark_value,
+                                    0, 255).astype(numpy.uint8)
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
+
+    def levels_brighten(self):
+        print("Levels - brighten")
 
     def levels_darken(self):
-        pass
+        print("Levels - darken")
+        # inBlack = np.array([0, 0, 0], dtype=np.float32)
+        # inWhite = np.array([255, 255, 255], dtype=np.float32)
+        # inGamma = np.array([1.0, 1.0, 1.0], dtype=np.float32)
+        # outBlack = np.array([0, 0, 0], dtype=np.float32)
+        # outWhite = np.array([255, 255, 255], dtype=np.float32)
+
+        # img = np.clip((img - inBlack) / (inWhite - inBlack), 0, 255)
+        # img = (img ** (1/inGamma)) * (outWhite - outBlack) + outBlack
+        # img = np.clip(img, 0, 255).astype(np.uint8)
 
     def median(self):
         pass
 
-    def upscale(self):
-        pass
+    # def upscale(self):
+    #     pass
 
     # disable randomizer until image is loaded
     def randomizer(self):
