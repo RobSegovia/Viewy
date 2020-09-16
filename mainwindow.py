@@ -105,6 +105,7 @@ class MainWindow:
         self.temp_list = []
         self.tabs = 0
         self.time_interval_list = []
+        self.orig_interval_list = []
         self.current_interval_index = 0
         self.current_interval = 0
         self.timer_paused = True
@@ -365,11 +366,11 @@ class MainWindow:
             label="Fit to Height of Image", command=self.win_fit_height, state='disabled')
         self.window_menu.add_command(
             label="Fit to Size of Image", command=self.win_fit_size, state='disabled')
-        self.window_menu.add_separator()
-        self.window_menu.add_command(
-            label="Show Sidebar", state='disabled', command=self.show_sidebar)
-        self.window_menu.add_command(
-            label="Hide Sidebar", state='disabled', command=self.hide_sidebar)
+        # self.window_menu.add_separator()
+        # self.window_menu.add_command(
+        #     label="Show Sidebar", state='disabled', command=self.show_sidebar)
+        # self.window_menu.add_command(
+        #     label="Hide Sidebar", state='disabled', command=self.hide_sidebar)
 
         self.help_menu.add_command(label="Help", command=self.help)
         self.help_menu.add_separator()
@@ -935,7 +936,8 @@ class MainWindow:
         self.time_diff = 0
 
         self.timer_activated = True
-        # self.timer_window_exists = True
+
+        self.status_text.set("Press SPACEBAR to begin/pause timer")
 
     def add_dir(self):
         # self.new_filenames_list.clear()
@@ -1207,6 +1209,7 @@ class MainWindow:
 
     def interval_in_seconds(self):
         # print(self.time_interval_list)
+        self.orig_interval_list = self.time_interval_list.copy()
         temp_list = []
         for item in self.time_interval_list:
             total_secs = item[0] * 60 + item[1]
@@ -1215,6 +1218,24 @@ class MainWindow:
         self.time_interval_list = []
         self.time_interval_list = temp_list.copy()
         # print(self.time_interval_list)
+
+    def interval_in_mins_secs(self):
+        # secs_interval = self.orig_interval_list[self.current_interval_index]
+        # print(secs_interval)
+
+        if self.orig_interval_list[self.current_interval_index][0] == 0:
+            secs_interval = self.orig_interval_list[self.current_interval_index][1]
+            self.status_text.set(
+                "Current interval:  {} second(s)".format(secs_interval))
+        elif self.orig_interval_list[self.current_interval_index][1] == 0:
+            mins_interval = self.orig_interval_list[self.current_interval_index][0]
+            self.status_text.set(
+                "Current interval:  {} minute(s)".format(mins_interval))
+        else:
+            mins_interval = self.orig_interval_list[self.current_interval_index][0]
+            secs_interval = self.orig_interval_list[self.current_interval_index][1]
+            self.status_text.set("Current interval:  {} : {} mins:secs".format(
+                mins_interval, secs_interval))
 
     def which_key(self, event):
         # print("Which key: ", event.keysym)
@@ -1233,20 +1254,25 @@ class MainWindow:
                 if self.current_interval_index > 0:
                     self.current_interval_index -= 1
                     self.current_interval = self.time_interval_list[self.current_interval_index]
-                    # print("Current interval:", self.current_interval)
+                    self.interval_in_mins_secs()
+                    self.recalc_interval()
+
             elif event.keysym == 's':
                 if self.current_interval_index < len(self.time_interval_list)-1:
                     # print("len()", len(self.time_interval_list))
                     self.current_interval_index += 1
                     self.current_interval = self.time_interval_list[self.current_interval_index]
-                    # print("Current interval:", self.current_interval)
+                    self.interval_in_mins_secs()
+                    self.recalc_interval()
 
             # toggle pause/continue state for timer
             if event.keysym == 'space' and not self.timer_paused:
                 self.timer_paused = True
+                self.status_text.set("Session has been PAUSED")
                 # print("Pause timer ||")
             elif event.keysym == 'space' and self.timer_paused:
                 self.timer_paused = False  # un-pause timer
+                self.status_text.set("Session is continuing")
                 # have to minus 1 sec to get correct interval
                 self.time_start = time.time() - 1
                 # backup the current value
@@ -1256,6 +1282,14 @@ class MainWindow:
                     self.current_interval -= self.time_diff
                 self.run_timer()
                 # print("Continue timer >")
+
+    def recalc_interval(self):
+        factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
+                  self.current_interval) / self.current_interval / 20
+        self.rect_x1 = self.timer_x0-10 + self.TIMER_BAR_WIDTH * \
+            (self.time_diff / self.current_interval)
+        self.canvas.coords('timer_bar', self.timer_x0,
+                           self.timer_y0, self.rect_x1, self.timer_y1)
 
     def reset_timer(self):
         if self.timer_window_exists:
