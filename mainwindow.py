@@ -114,6 +114,8 @@ class MainWindow:
         self.time_start = 0.0
         self.time_diff = 0.0
         self.timer_window_exists = False
+        self.new_session_started = False
+        self.timer_bar_hidden = False
 
         self.timer_x0 = 0
         self.timer_x1 = 0
@@ -138,7 +140,7 @@ class MainWindow:
         mainWindow.configure()
         # mainWindow.bind('<Key>', self.load)
         mainWindow.bind('<Key>', self.which_key)
-        mainWindow.bind('<MouseWheel>', self.zoom_in)
+        mainWindow.bind('<MouseWheel>', self.zoom)
 
         self.win_location()  # TODO del ???
 
@@ -212,30 +214,29 @@ class MainWindow:
                 8: "Flip the image horizontally",
                 9: "Rotate the image counter-clockwise",
                 10: "Rotate the image clockwise",
-                11: "Rotate the image by a custom amount",
-                12: None,
-                13: "Show information about the image"
+                11: None,
+                12: "Show information about the image"
             },
             2: {
-                0: "Undo the last action",
-                1: "Redo the undone action",
-                2: "Go to the next image",
-                3: "Go back to the previous image",
-                4: "Search this image on Google",
-                5: None,
-                6: "Resize the image by custom amount",
-                7: "Add a vignette border to the image",
-                8: "Brighten the image",
-                9: "Apply Levels - Darken to the image",
-                10: "Apply a Median filter to the image",
-                11: "Upscale the image",
-                12: None,
-                13: "Randomize the order of the images"
+                0: "Go to the next image",
+                1: "Go back to the previous image",
+                2: None,
+                3: "Search this image on Google",
+                4: None,
+                5: "Resize the image by custom amount",
+                6: "Add a vignette border to the image",
+                7: "Brighten the image",
+                8: "Apply Levels - Darken to the image",
+                9: "Apply a Median filter to the image",
+                10: None,
+                11: "Randomize the order of the images"
             },
             3: {
                 0: "Pause or Continue the timer",
                 1: "Skip to the next timer interval",
-                2: "Go back to the previous timer interval"
+                2: "Go back to the previous timer interval",
+                3: None,
+                4: "Hide or Show the timer progress bar"
             },
             4: {
                 0: "Minimize the program window",
@@ -249,9 +250,7 @@ class MainWindow:
                 8: "Fit the window to the width of the image",
                 9: "Fit the window to the height of the image",
                 10: "Fit the window to the size of the image",
-                11: None,
-                12: "Show the tools sidebar",
-                13: "Hide the tools sidebar"
+
             },
             5: {
                 0: "Access help documentation",
@@ -273,7 +272,7 @@ class MainWindow:
         self.menubar.add_cascade(
             label="Image", menu=self.image_menu, state='disabled')
         self.menubar.add_cascade(
-            label="Timed Session", menu=self.timed_menu, state='normal')
+            label="Timed Session", menu=self.timed_menu, state='disabled')
         self.menubar.add_cascade(
             label="Window", menu=self.window_menu)
         self.menubar.add_cascade(label="Help", menu=self.help_menu)
@@ -314,17 +313,14 @@ class MainWindow:
             label="Rotate Left", command=self.rotate_left)
         self.view_menu.add_command(
             label="Rotate Right", command=self.rotate_right)
-        self.view_menu.add_command(
-            label="Rotate Amount", command=self.rotate_amount)
         self.view_menu.add_separator()
         self.view_menu.add_command(label="Image Info", command=self.image_info)
 
-        self.image_menu.add_command(label="Undo", command=self.undo)
-        self.image_menu.add_command(label="Redo", command=self.redo)
         self.image_menu.add_command(
-            label="Next Image", command=self.skip_image)
+            label="Next Image", command=self.next_image_func)
         self.image_menu.add_command(
-            label="Previous Image", command=self.prev_image)
+            label="Previous Image", command=self.prev_image_func)
+        self.image_menu.add_separator()
         self.image_menu.add_command(
             label="Search Image on Google", command=self.search_google)
         self.image_menu.add_separator()
@@ -335,8 +331,6 @@ class MainWindow:
         self.image_menu.add_command(
             label="Levels - Darken", command=self.levels_darken)
         self.image_menu.add_command(label="Median", command=self.median)
-        self.image_menu.add_command(
-            label="Upscale Image", command=self.upscale)
         self.image_menu.add_separator()
         self.image_menu.add_checkbutton(
             label="Random Order of Images", variable=self.random_on, command=self.randomizer)
@@ -347,6 +341,9 @@ class MainWindow:
             label="Next Timed Interval", command=self.next_interval)
         self.timed_menu.add_command(
             label="Previous Timed Interval", command=self.prev_interval)
+        self.timed_menu.add_separator()
+        self.timed_menu.add_command(
+            label="Hide/Show Timer Bar", command=self.hide_show_timer_bar)
 
         self.window_menu.add_command(label="Minimize", command=self.min_window)
         self.window_menu.add_command(
@@ -366,11 +363,6 @@ class MainWindow:
             label="Fit to Height of Image", command=self.win_fit_height, state='disabled')
         self.window_menu.add_command(
             label="Fit to Size of Image", command=self.win_fit_size, state='disabled')
-        # self.window_menu.add_separator()
-        # self.window_menu.add_command(
-        #     label="Show Sidebar", state='disabled', command=self.show_sidebar)
-        # self.window_menu.add_command(
-        #     label="Hide Sidebar", state='disabled', command=self.hide_sidebar)
 
         self.help_menu.add_command(label="Help", command=self.help)
         self.help_menu.add_separator()
@@ -465,6 +457,7 @@ class MainWindow:
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_string)))
 
+                self.new_session_started = False
                 self.restore_menu_items()
             # set to 0 so it won't run next time
             # unless it's turned on by accessing its menu option
@@ -522,6 +515,7 @@ class MainWindow:
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_list)))
                 self.restore_menu_items()
+                self.new_session_started = False
 
             self.load_dir_var.set(0)
 
@@ -936,8 +930,19 @@ class MainWindow:
         self.time_diff = 0
 
         self.timer_activated = True
+        self.new_session_started = True
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
+        self.menubar.entryconfig('Timed Session', state='normal')
+
+    def hide_show_timer_bar(self):
+        if self.timer_bar_hidden:
+            self.timer_bar_hidden = False
+            self.canvas.tag_raise('timer_window', 'all')
+            self.canvas.tag_raise('timer_bar', 'all')
+        else:
+            self.timer_bar_hidden = True
+            self.canvas.tag_raise('image', 'all')
 
     def add_dir(self):
         # self.new_filenames_list.clear()
@@ -1245,18 +1250,19 @@ class MainWindow:
             if event.keysym == 'Right':
                 self.next_image = 'Right'
                 self.load()
-                self.reset_timer()
+                if self.timer_window_exists:
+                    self.reset_timer()
             elif event.keysym == 'Left':
                 self.next_image = 'Left'
                 self.load()
-                self.reset_timer()
+                if self.timer_window_exists:
+                    self.reset_timer()
             elif event.keysym == 'a':
                 if self.current_interval_index > 0:
                     self.current_interval_index -= 1
                     self.current_interval = self.time_interval_list[self.current_interval_index]
                     self.interval_in_mins_secs()
                     self.recalc_interval()
-
             elif event.keysym == 's':
                 if self.current_interval_index < len(self.time_interval_list)-1:
                     # print("len()", len(self.time_interval_list))
@@ -1264,6 +1270,8 @@ class MainWindow:
                     self.current_interval = self.time_interval_list[self.current_interval_index]
                     self.interval_in_mins_secs()
                     self.recalc_interval()
+            elif event.keysym == 'h':
+                self.hide_show_timer_bar()
 
             # toggle pause/continue state for timer
             if event.keysym == 'space' and not self.timer_paused:
@@ -1376,11 +1384,18 @@ class MainWindow:
     def load_session(self):
         pass
 
+    def zoom(self, event):
+        if event.delta > 0:
+            self.zoom_in()
+        else:
+            self.zoom_out()
+
     def zoom_in(self, event=None):
         # print("Find image:", self.canvas.find_withtag('image')[0])
         # try:
+        # TODO bug when click Zoom In menu
         if self.image_exists:
-            if (self.zoom_index < 7) and (event.delta > 0):
+            if (self.zoom_index < 7):
                 self.zoom_index += 1
                 # print("Zoom index:", self.zoom_index)
                 factor = self.zoom_factor[self.zoom_index]
@@ -1392,8 +1407,8 @@ class MainWindow:
                 # print("Zoom value:", self.zoom_value)
                 # print()
                 self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
-            elif event.delta < 0:
-                self.zoom_out(event)
+            # elif event.delta < 0:
+            #     self.zoom_out(event)
         # except:
         #     print("-> No image loaded yet to zoom into")
 
@@ -1533,17 +1548,17 @@ class MainWindow:
         os.startfile(folder_path[0])
         # print(folder_path[0])
 
-    def undo(self):
-        pass
+    # def undo(self):
+    #     pass
 
-    def redo(self):
-        pass
+    # def redo(self):
+    #     pass
 
-    def skip_image(self):
-        pass
+    def next_image_func(self):
+        self.canvas.event_generate('<Key>', keysym='Right', when='tail')
 
-    def prev_image(self):
-        pass
+    def prev_image_func(self):
+        self.canvas.event_generate('<Key>', keysym='Left', when='tail')
 
     def search_google(self):
         filePath = "{}".format(self.filenames_list[self.image_index])
@@ -1594,13 +1609,13 @@ class MainWindow:
             self.filenames_list = self.filenames_list_backup.copy()
 
     def pause(self):
-        pass
+        self.canvas.event_generate('<Key>', keysym='space', when='tail')
 
     def next_interval(self):
-        pass
+        self.canvas.event_generate('<Key>', keysym='s', when='tail')
 
     def prev_interval(self):
-        pass
+        self.canvas.event_generate('<Key>', keysym='a', when='tail')
 
     @ staticmethod
     def min_window():
@@ -1721,11 +1736,11 @@ class MainWindow:
         else:
             mainWindow.state('zoomed')  # maximize window
 
-    def show_sidebar(self):
-        pass
+    # def show_sidebar(self):
+    #     pass
 
-    def hide_sidebar(self):
-        pass
+    # def hide_sidebar(self):
+    #     pass
 
     def b1_release(self, event):
         self.b1_released = True
@@ -1873,7 +1888,7 @@ class MainWindow:
 
         self.initial_scroll_pos = True
 
-        if not self.timer_window_exists and self.image_exists:
+        if not self.timer_window_exists and self.new_session_started and self.image_exists:
             self.draw_timer_window()
             self.timer_window_exists = True
             print(" first timer window created")
@@ -1895,10 +1910,13 @@ class MainWindow:
             self.canvas.coords('timer_bar', self.timer_x0,
                                self.timer_y0, self.rect_x1, self.timer_y1)
 
-            # raise the timer window above all items
-            # repeat for the timer bar
-            self.canvas.tag_raise('timer_window', 'all')
-            self.canvas.tag_raise('timer_bar', 'all')
+            if self.timer_bar_hidden:
+                self.canvas.tag_raise('image', 'all')
+            else:
+                # raise the timer window above all items
+                # repeat for the timer bar
+                self.canvas.tag_raise('timer_window', 'all')
+                self.canvas.tag_raise('timer_bar', 'all')
 
             # print(self.canvas.find_all())
             # for item in self.canvas.find_all():
