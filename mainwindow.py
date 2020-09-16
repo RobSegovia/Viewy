@@ -1558,12 +1558,6 @@ class MainWindow:
         os.startfile(folder_path[0])
         # print(folder_path[0])
 
-    # def undo(self):
-    #     pass
-
-    # def redo(self):
-    #     pass
-
     def next_image_func(self):
         self.canvas.event_generate('<Key>', keysym='Right', when='tail')
 
@@ -1596,7 +1590,6 @@ class MainWindow:
         self.refresh_image()
 
     def brighten(self, value=10):
-
         bright_value = numpy.array([value, value, value], dtype=numpy.float32)
         self.cv2_image = numpy.clip(self.cv2_image + bright_value,
                                     0, 255).astype(numpy.uint8)
@@ -1612,20 +1605,49 @@ class MainWindow:
         self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
         self.refresh_image()
 
-    def levels_brighten(self):
+    def levels_brighten(self, inblack=0, inwhite=229.5, gamma=1.0, outblack=0, outwhite=255):
+        black_input = numpy.array(
+            [inblack, inblack, inblack], dtype=numpy.float32)
+        white_input = numpy.array(
+            [inwhite, inwhite, inwhite], dtype=numpy.float32)
+        gamma_input = numpy.array([gamma, gamma, gamma], dtype=numpy.float32)
+        black_output = numpy.array(
+            [outblack, outblack, outblack], dtype=numpy.float32)
+        white_output = numpy.array(
+            [outwhite, outwhite, outwhite], dtype=numpy.float32)
+
+        self.cv2_image = numpy.clip(
+            (self.cv2_image - black_input) / (white_input - black_input), 0, 255)
+        self.cv2_image = (self.cv2_image ** (1/gamma)) * \
+            (white_output - black_output) + black_output
+        self.cv2_image = numpy.clip(self.cv2_image, 0, 255).astype(numpy.uint8)
+
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
         print("Levels - brighten")
 
-    def levels_darken(self):
-        print("Levels - darken")
-        # inBlack = np.array([0, 0, 0], dtype=np.float32)
-        # inWhite = np.array([255, 255, 255], dtype=np.float32)
-        # inGamma = np.array([1.0, 1.0, 1.0], dtype=np.float32)
-        # outBlack = np.array([0, 0, 0], dtype=np.float32)
-        # outWhite = np.array([255, 255, 255], dtype=np.float32)
+    def levels_darken(self, inblack=25.5, inwhite=255, gamma=1.0, outblack=0, outwhite=255):
+        black_input = numpy.array(
+            [inblack, inblack, inblack], dtype=numpy.float32)
+        white_input = numpy.array(
+            [inwhite, inwhite, inwhite], dtype=numpy.float32)
+        gamma_input = numpy.array([gamma, gamma, gamma], dtype=numpy.float32)
+        black_output = numpy.array(
+            [outblack, outblack, outblack], dtype=numpy.float32)
+        white_output = numpy.array(
+            [outwhite, outwhite, outwhite], dtype=numpy.float32)
 
-        # img = np.clip((img - inBlack) / (inWhite - inBlack), 0, 255)
-        # img = (img ** (1/inGamma)) * (outWhite - outBlack) + outBlack
-        # img = np.clip(img, 0, 255).astype(np.uint8)
+        self.cv2_image = numpy.clip(
+            (self.cv2_image - black_input) / (white_input - black_input), 0, 255)
+        self.cv2_image = (self.cv2_image ** (1/gamma)) * \
+            (white_output - black_output) + black_output
+        self.cv2_image = numpy.clip(self.cv2_image, 0, 255).astype(numpy.uint8)
+
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
+        self.refresh_image()
+        print("Levels - darken")
 
     def median(self):
         pass
