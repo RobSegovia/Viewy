@@ -327,7 +327,8 @@ class MainWindow:
         self.image_menu.add_separator()
         # self.image_menu.add_command(
         #     label="Resize Image", command=self.resize_image)
-        self.image_menu.add_command(label="Vignette Border")
+        self.image_menu.add_command(
+            label="Vignette Border", command=self.vignette)
         self.image_menu.add_command(label="Brighten", command=self.brighten)
         self.image_menu.add_command(label="Darken", command=self.darken)
         self.image_menu.add_command(
@@ -1261,6 +1262,8 @@ class MainWindow:
                 self.load()
                 if self.timer_window_exists:
                     self.reset_timer()
+            elif event.keysym == 'r':
+                self.load()
             elif event.keysym == 'a':
                 if self.current_interval_index > 0:
                     self.current_interval_index -= 1
@@ -1276,9 +1279,11 @@ class MainWindow:
                     self.recalc_interval()
             elif event.keysym == 'h':
                 self.hide_show_timer_bar()
+            elif event.keysym == 'v':
+                self.vignette()
             elif event.keysym == 'b':
                 self.brighten()
-            elif event.keysym == 'v':
+            elif event.keysym == 'd':
                 self.darken()
             elif event.keysym == 'l':
                 self.levels_brighten()
@@ -1587,6 +1592,27 @@ class MainWindow:
         self.tk_image = PIL.ImageTk.PhotoImage(self.tk_image)
         # destroy the image before refreshing
         self.canvas.delete("image")
+        self.refresh_image()
+
+    def vignette(self):
+        print("Vignette")
+        zeros = numpy.copy(self.cv2_image)
+        zeros[:, :, :] = 0
+
+        a = cv2.getGaussianKernel(self.image_width, self.image_width/2)
+        b = cv2.getGaussianKernel(self.image_height, self.image_height/2)
+        c = b * a.T
+        d = c / c.max()
+
+        zeros[:, :, 0] = self.cv2_image[:, :, 0] * d
+        zeros[:, :, 1] = self.cv2_image[:, :, 1] * d
+        zeros[:, :, 2] = self.cv2_image[:, :, 2] * d
+        # e = self.cv2_image * d
+
+        self.cv2_image = zeros
+
+        self.pil_image = PIL.Image.fromarray(self.cv2_image)
+        self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
         self.refresh_image()
 
     def brighten(self, value=10):
