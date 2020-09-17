@@ -123,7 +123,7 @@ class MainWindow:
         self.timer_y0 = 0
         self.timer_y1 = 0
         self.rect_x1 = 0
-        self.TIMER_BAR_WIDTH = 246
+        self.TIMER_BAR_WIDTH = 250
         self.TIMER_WIN_X = 250
         self.TIMER_WIN_Y = 12
 
@@ -1321,13 +1321,20 @@ class MainWindow:
         if not self.timer_paused:
 
             self.time_diff = time.time() - self.time_start
-            print("\ttime diff:", self.time_diff)
+            # print("\ttime diff:", self.time_diff)
             # print("\tSeconds elapsed: {:.0f}".format(self.time_diff))
 
             # makes the timer bar advance over time
             factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
                       self.current_interval) / self.current_interval / 20
+            # time_chunks = (self.current_interval * 1000 / 50)
+            # time_chunks = (self.current_interval * 20)
+            # pixel_amount = self.TIMER_BAR_WIDTH / time_chunks
             self.rect_x1 = self.rect_x1 + factor
+
+            # NOTE this way kind of works and is simpler but the other way is more accurate
+            # n = self.TIMER_BAR_WIDTH / self.current_interval
+            # self.rect_x1 = self.rect_x1 + 1
 
             # print("self.rect_x1:", self.rect_x1)
             self.canvas.coords('timer_bar', self.timer_x0,
@@ -1339,7 +1346,10 @@ class MainWindow:
                 self.load()
                 self.reset_timer()
 
-            # run time check again in 1 sec
+            # NOTE goes with note above
+            # n = 1 / n * 1000
+            # run time check again in n secs
+            # self.canvas.after(int(n), self.run_timer)
             self.canvas.after(50, self.run_timer)
 
     def recalc_interval(self):
@@ -1412,7 +1422,9 @@ class MainWindow:
         self.canvas.coords('timer_window', self.timer_x0,
                            self.timer_y0, self.timer_x1, self.timer_y1)
 
-        self.rect_x1 = self.timer_x0
+        # Added 2px so that the timer bar reaches the end of the timer window
+        # before the image changes
+        self.rect_x1 = self.timer_x0 + 2
 
         self.canvas.coords('timer_bar', self.timer_x0,
                            self.timer_y0, self.rect_x1, self.timer_y1)
