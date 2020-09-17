@@ -116,6 +116,7 @@ class MainWindow:
         self.timer_window_exists = False
         self.new_session_started = False
         self.timer_bar_hidden = False
+        self.first_session_run = False
 
         self.timer_x0 = 0
         self.timer_x1 = 0
@@ -936,6 +937,7 @@ class MainWindow:
 
         self.timer_activated = True
         self.new_session_started = True
+        self.first_session_run = True
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
         self.menubar.entryconfig('Timed Session', state='normal')
@@ -1285,9 +1287,9 @@ class MainWindow:
                 self.brighten()
             elif event.keysym == 'd':
                 self.darken()
-            elif event.keysym == 'l':
+            elif event.keysym == 'g':
                 self.levels_brighten()
-            elif event.keysym == 'k':
+            elif event.keysym == 'f':
                 self.levels_darken()
 
             # toggle pause/continue state for timer
@@ -1298,15 +1300,47 @@ class MainWindow:
             elif event.keysym == 'space' and self.timer_paused:
                 self.timer_paused = False  # un-pause timer
                 self.status_text.set("Session is continuing")
-                # have to minus 1 sec to get correct interval
-                self.time_start = time.time() - 1
+
+                self.time_start = time.time() - self.time_diff
+                # self.time_start = time.time() - self.time_start + self.time_diff
                 # backup the current value
                 self.current_interval_copy = self.current_interval
                 # calculate what's left of interval after pausing
-                if self.time_diff > 0:
-                    self.current_interval -= self.time_diff
+                # if self.time_diff > 0:
+                #     self.current_interval -= self.time_diff
+
+                if self.first_session_run:
+                    self.update_timer_bar()
+                    self.reset_timer()
+                    self.first_session_run = False
+                    print("First session run")
                 self.run_timer()
-                # print("Continue timer >")
+
+    def run_timer(self):
+
+        if not self.timer_paused:
+
+            self.time_diff = time.time() - self.time_start
+            print("\ttime diff:", self.time_diff)
+            # print("\tSeconds elapsed: {:.0f}".format(self.time_diff))
+
+            # makes the timer bar advance over time
+            factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
+                      self.current_interval) / self.current_interval / 20
+            self.rect_x1 = self.rect_x1 + factor
+
+            # print("self.rect_x1:", self.rect_x1)
+            self.canvas.coords('timer_bar', self.timer_x0,
+                               self.timer_y0, self.rect_x1, self.timer_y1)
+            if self.time_diff > self.current_interval:
+                # reset the interval
+                self.current_interval = self.current_interval_copy
+                self.next_image = 'Right'
+                self.load()
+                self.reset_timer()
+
+            # run time check again in 1 sec
+            self.canvas.after(50, self.run_timer)
 
     def recalc_interval(self):
         factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
@@ -1327,33 +1361,6 @@ class MainWindow:
             # reset current interval too in case timer had been paused
             self.current_interval = self.time_interval_list[self.current_interval_index]
 
-    def run_timer(self):
-
-        if not self.timer_paused:
-
-            self.time_diff = time.time() - self.time_start
-            # print("\tSeconds elapsed: {:.0f}".format(self.time_diff))
-
-            # makes the timer bar advance over time
-            factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
-                      self.current_interval) / self.current_interval / 20
-            self.rect_x1 = self.rect_x1 + factor
-
-            # print("self.rect_x1:", self.rect_x1)
-            self.canvas.coords('timer_bar', self.timer_x0,
-                               self.timer_y0, self.rect_x1, self.timer_y1)
-            if self.time_diff >= self.current_interval:
-                # reset the interval
-                self.current_interval = self.current_interval_copy
-                self.next_image = 'Right'
-                self.load()
-                self.reset_timer()
-                # mainWindow.event_generate(
-                #     "<Key>", keysym='Right', when='tail')
-
-            # run time check again in 1 sec
-            self.canvas.after(50, self.run_timer)
-
     def next_interval(self):
         mainWindow.event_generate('<Key>', keysym='s', when='tail')
         # print("Next interval →")
@@ -1366,18 +1373,22 @@ class MainWindow:
 
         self.win_dimensions()
 
-        x = 250
-        y = 20
-        x0 = (self.canvas_width / 2) - x/2
-        x1 = (self.canvas_width / 2) + x/2
-        y0 = self.win_height - 42 - y
+        x0 = (self.canvas_width / 2) - self.TIMER_WIN_X/2
+        x1 = (self.canvas_width / 2) + self.TIMER_WIN_X/2
+        y0 = self.win_height - 42 - self.TIMER_WIN_Y
         y1 = self.win_height - 44
         self.rect_x1 = x1
         self.timer_window = self.canvas.create_rectangle(
             x0, y0, x1, y1, fill='#dedede', tags='timer_window')
         self.timer_bar = self.canvas.create_rectangle(
-            x0+5, y0+5, x0, y1-5, fill='#33ff00', tags='timer_bar'
+            x0, y0, x0, y1, fill='#33ff00', tags='timer_bar'
         )
+        self.canvas.tag_raise('timer_window', 'all')
+        self.canvas.tag_raise('timer_bar', 'all')
+
+        print(self.canvas.find_all())
+        for item in self.canvas.find_all():
+            print(self.canvas.gettags(item))
 
         # print('rect created')
 
@@ -1389,6 +1400,31 @@ class MainWindow:
         # button1.configure(width=10, activebackground="#33B5E5")
         # button1_window = self.canvas.create_window(
         #     10, 10, anchor='nw', window=button1)
+
+    def update_timer_bar(self):
+        self.win_dimensions()
+
+        self.timer_x0 = (self.canvas_width / 2) - self.TIMER_WIN_X/2
+        self.timer_x1 = (self.canvas_width / 2) + self.TIMER_WIN_X/2
+        self.timer_y0 = self.win_height - 42 - self.TIMER_WIN_Y
+        self.timer_y1 = self.win_height - 44
+
+        self.canvas.coords('timer_window', self.timer_x0,
+                           self.timer_y0, self.timer_x1, self.timer_y1)
+
+        self.rect_x1 = self.timer_x0
+
+        self.canvas.coords('timer_bar', self.timer_x0,
+                           self.timer_y0, self.rect_x1, self.timer_y1)
+
+        if self.timer_bar_hidden:
+            self.canvas.tag_raise('image', 'all')
+        else:
+            # raise the timer window above all items
+            # repeat for the timer bar
+            self.canvas.tag_raise('timer_window', 'all')
+            self.canvas.tag_raise('timer_bar', 'all')
+            print("timer bar should be showing normally")
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
@@ -1977,36 +2013,7 @@ class MainWindow:
             self.timer_window_exists = True
             print(" first timer window created")
         elif self.timer_window_exists and self.image_exists:
-            self.win_dimensions()
-
-            self.timer_x0 = (self.canvas_width / 2) - self.TIMER_WIN_X/2
-            self.timer_x1 = (self.canvas_width / 2) + self.TIMER_WIN_X/2
-            self.timer_y0 = self.win_height - 42 - self.TIMER_WIN_Y
-            self.timer_y1 = self.win_height - 44
-
-            self.canvas.coords('timer_window', self.timer_x0,
-                               self.timer_y0, self.timer_x1, self.timer_y1)
-            self.timer_x0 += 3
-            self.timer_y0 += 2
-            self.rect_x1 = self.timer_x0
-            # self.rect_x1 = self.timer_x0 + self.TIMER_BAR_WIDTH / self.current_interval
-            self.timer_y1 -= 2
-            self.canvas.coords('timer_bar', self.timer_x0,
-                               self.timer_y0, self.rect_x1, self.timer_y1)
-
-            if self.timer_bar_hidden:
-                self.canvas.tag_raise('image', 'all')
-            else:
-                # raise the timer window above all items
-                # repeat for the timer bar
-                self.canvas.tag_raise('timer_window', 'all')
-                self.canvas.tag_raise('timer_bar', 'all')
-
-            # print(self.canvas.find_all())
-            # for item in self.canvas.find_all():
-            #     print(self.canvas.gettags(item))
-
-            # print("tag raised ↑")
+            self.update_timer_bar()
 
         # print("Win width:", mainWindow.winfo_width(),
         #       "Img width:", self.image_width)
