@@ -988,6 +988,7 @@ class MainWindow:
 
                 all_folders_list = []
                 all_folders_list.append(path)
+                empty_folder_list = []
 
                 # print("all folders:\t", all_folders_list)
 
@@ -998,11 +999,16 @@ class MainWindow:
                         all_folders_list.remove(item)
                     else:
                         if not self.contains_images(item):
-                            all_folders_list.remove(item)
+                            empty_folder_list.append(item)  #
+                            # all_folders_list.remove(item)
 
                 if all_folders_list:
                     # call RECURSIVE function
                     self.temp_list = self.recurs_folder_scan(all_folders_list)
+
+                    for folder in empty_folder_list:  #
+                        self.temp_list.remove(folder)    #
+
                     # Populate self.self.dir_box with folders
                     self.populate_dir_box(self.temp_list)
 
