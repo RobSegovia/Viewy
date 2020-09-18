@@ -117,6 +117,7 @@ class MainWindow:
         self.new_session_started = False
         self.timer_bar_hidden = False
         self.first_session_run = False
+        self.exited_load_imgdir = False
 
         self.timer_x0 = 0
         self.timer_x1 = 0
@@ -382,20 +383,20 @@ class MainWindow:
             relief=tkinter.SUNKEN, anchor='w', textvariable=self.status_text)
         self.status_bar.pack(side='left', fill='x', expand=True)
 
-        self.zoom_bar = tkinter.Label(
-            relief='sunken',
-            anchor='e',
-            textvariable=self.zoom_text,
-            width=15)
-        self.zoom_bar.pack(side='right', fill='x')
-
         # Info bar which sits beside status bar
         self.info_bar = tkinter.Label(
             relief='sunken',
             anchor='e',
             textvariable=self.info_text,
-            width=20)
+            width=18)
         self.info_bar.pack(side='right', fill='x')
+
+        self.zoom_bar = tkinter.Label(
+            relief='sunken',
+            anchor='e',
+            textvariable=self.zoom_text,
+            width=10)
+        self.zoom_bar.pack(side='right', fill='x')
 
     def menubar_selected(self, event=None):
         # update the menubar item attribute for use in status bar function
@@ -463,8 +464,15 @@ class MainWindow:
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_string)))
 
-                self.new_session_started = False
                 self.restore_menu_items()
+
+                self.new_session_started = False
+                self.timer_Window_exists = False
+                self.exited_load_imgdir = True
+                if not self.timer_bar_hidden:
+                    self.timer_bar_hidden = True
+                    self.canvas.tag_raise('image', 'all')
+
             # set to 0 so it won't run next time
             # unless it's turned on by accessing its menu option
             self.load_image_var.set(0)
@@ -521,7 +529,13 @@ class MainWindow:
                     self.status_text.set("  {} images were queued successfully".format(
                         len(self.filenames_list)))
                 self.restore_menu_items()
+
                 self.new_session_started = False
+                self.timer_Window_exists = False
+                self.exited_load_imgdir = True
+                if not self.timer_bar_hidden:
+                    self.timer_bar_hidden = True
+                    self.canvas.tag_raise('image', 'all')
 
             self.load_dir_var.set(0)
 
@@ -938,6 +952,16 @@ class MainWindow:
         self.timer_activated = True
         self.new_session_started = True
         self.first_session_run = True
+        self.timer_window_exists = False
+
+        # runs in case the previous mode used was not session mode
+        if self.exited_load_imgdir:
+            self.exited_load_imgdir = False
+
+            self.draw_timer_window()
+            self.timer_window_exists = True
+            self.timer_bar_hidden = False
+            print(" first timer window created")
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
         self.menubar.entryconfig('Timed Session', state='normal')
@@ -1266,21 +1290,50 @@ class MainWindow:
                     self.reset_timer()
             elif event.keysym == 'r':
                 self.load()
-            elif event.keysym == 'a':
-                if self.current_interval_index > 0:
-                    self.current_interval_index -= 1
-                    self.current_interval = self.time_interval_list[self.current_interval_index]
-                    self.interval_in_mins_secs()
-                    self.recalc_interval()
-            elif event.keysym == 's':
-                if self.current_interval_index < len(self.time_interval_list)-1:
-                    # print("len()", len(self.time_interval_list))
-                    self.current_interval_index += 1
-                    self.current_interval = self.time_interval_list[self.current_interval_index]
-                    self.interval_in_mins_secs()
-                    self.recalc_interval()
-            elif event.keysym == 'h':
-                self.hide_show_timer_bar()
+            elif self.new_session_started:
+                if event.keysym == 'a':
+                    if self.current_interval_index > 0:
+                        self.current_interval_index -= 1
+                        self.current_interval = self.time_interval_list[self.current_interval_index]
+                        self.interval_in_mins_secs()
+                        self.recalc_interval()
+                elif event.keysym == 's':
+                    if self.current_interval_index < len(self.time_interval_list)-1:
+                        # print("len()", len(self.time_interval_list))
+                        self.current_interval_index += 1
+                        self.current_interval = self.time_interval_list[self.current_interval_index]
+                        self.interval_in_mins_secs()
+                        self.recalc_interval()
+                elif event.keysym == 'h':
+                    self.hide_show_timer_bar()
+
+                # toggle pause/continue state for timer
+                elif event.keysym == 'space' and not self.timer_paused:
+                    self.timer_paused = True
+                    self.status_text.set("Session has been PAUSED")
+                    # print("Pause timer ||")
+                elif event.keysym == 'space' and self.timer_paused:
+                    self.timer_paused = False  # un-pause timer
+                    self.status_text.set("Session is continuing")
+
+                    self.time_start = time.time() - self.time_diff
+                    # self.time_start = time.time() - self.time_start + self.time_diff
+                    # backup the current value
+                    self.current_interval_copy = self.current_interval
+                    # calculate what's left of interval after pausing
+                    # if self.time_diff > 0:
+                    #     self.current_interval -= self.time_diff
+
+                    if self.first_session_run:
+                        self.update_timer_bar()
+                        self.reset_timer()
+                        self.first_session_run = False
+                        # self.timer_bar_hidden = False
+                        self.canvas.tag_raise('timer_window', 'all')
+                        self.canvas.tag_raise('timer_bar', 'all')
+                        print("First session run")
+                    self.run_timer()
+
             elif event.keysym == 'v':
                 self.vignette()
             elif event.keysym == 'b':
@@ -1291,30 +1344,6 @@ class MainWindow:
                 self.levels_brighten()
             elif event.keysym == 'f':
                 self.levels_darken()
-
-            # toggle pause/continue state for timer
-            if event.keysym == 'space' and not self.timer_paused:
-                self.timer_paused = True
-                self.status_text.set("Session has been PAUSED")
-                # print("Pause timer ||")
-            elif event.keysym == 'space' and self.timer_paused:
-                self.timer_paused = False  # un-pause timer
-                self.status_text.set("Session is continuing")
-
-                self.time_start = time.time() - self.time_diff
-                # self.time_start = time.time() - self.time_start + self.time_diff
-                # backup the current value
-                self.current_interval_copy = self.current_interval
-                # calculate what's left of interval after pausing
-                # if self.time_diff > 0:
-                #     self.current_interval -= self.time_diff
-
-                if self.first_session_run:
-                    self.update_timer_bar()
-                    self.reset_timer()
-                    self.first_session_run = False
-                    print("First session run")
-                self.run_timer()
 
     def run_timer(self):
 
@@ -2020,6 +2049,7 @@ class MainWindow:
 
         self.initial_scroll_pos = True
 
+        # runs if first mode upon starting program is session mode
         if not self.timer_window_exists and self.new_session_started and self.image_exists:
             self.draw_timer_window()
             self.timer_window_exists = True
