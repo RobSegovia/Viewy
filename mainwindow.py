@@ -562,9 +562,19 @@ class MainWindow:
                 self.cv2_image = cv2.imread(
                     self.filenames_list[self.image_index])
 
-                # convert to PIL colour order
-                self.cv2_image = cv2.cvtColor(
-                    self.cv2_image, cv2.COLOR_BGR2RGB)
+                try:
+                    # convert to PIL colour order
+                    self.cv2_image = cv2.cvtColor(
+                        self.cv2_image, cv2.COLOR_BGR2RGB)
+                except:
+                    # load error image
+                    self.cv2_image = cv2.imread('error_img.jpg')
+                    self.cv2_image = cv2.cvtColor(
+                        self.cv2_image, cv2.COLOR_BGR2RGB)
+                    self.status_text.set("Image could not load")
+                else:
+                    self.status_text.set("Image loaded successfully")
+
                 # convert array to PIL format
                 self.pil_image = PIL.Image.fromarray(self.cv2_image)
                 # convert to tkinter format
@@ -590,9 +600,19 @@ class MainWindow:
                 self.cv2_image = cv2.imread(
                     self.filenames_list[self.image_index])
 
-                # convert to PIL colour order
-                self.cv2_image = cv2.cvtColor(
-                    self.cv2_image, cv2.COLOR_BGR2RGB)
+                try:
+                    # convert to PIL colour order
+                    self.cv2_image = cv2.cvtColor(
+                        self.cv2_image, cv2.COLOR_BGR2RGB)
+                except:
+                    # load error image
+                    self.cv2_image = cv2.imread('error_img.jpg')
+                    self.cv2_image = cv2.cvtColor(
+                        self.cv2_image, cv2.COLOR_BGR2RGB)
+                    self.status_text.set("Image could not load")
+                else:
+                    self.status_text.set("Image loaded successfully")
+
                 # convert array to PIL format
                 self.pil_image = PIL.Image.fromarray(self.cv2_image)
 
