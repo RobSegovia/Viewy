@@ -466,12 +466,7 @@ class MainWindow:
 
                 self.restore_menu_items()
 
-                self.new_session_started = False
-                self.timer_Window_exists = False
-                self.exited_load_imgdir = True
-                if not self.timer_bar_hidden:
-                    self.timer_bar_hidden = True
-                    self.canvas.tag_raise('image', 'all')
+                self.reset_from_session_mode()
 
             # set to 0 so it won't run next time
             # unless it's turned on by accessing its menu option
@@ -530,12 +525,7 @@ class MainWindow:
                         len(self.filenames_list)))
                 self.restore_menu_items()
 
-                self.new_session_started = False
-                self.timer_Window_exists = False
-                self.exited_load_imgdir = True
-                if not self.timer_bar_hidden:
-                    self.timer_bar_hidden = True
-                    self.canvas.tag_raise('image', 'all')
+            self.reset_from_session_mode()
 
             self.load_dir_var.set(0)
 
@@ -606,7 +596,7 @@ class MainWindow:
                         self.cv2_image, cv2.COLOR_BGR2RGB)
                 except:
                     # load error image
-                    self.cv2_image = cv2.imread('error_img.jpg')
+                    self.cv2_image = cv2.imread('error_img.png')
                     self.cv2_image = cv2.cvtColor(
                         self.cv2_image, cv2.COLOR_BGR2RGB)
                     self.status_text.set("Image could not load")
@@ -723,6 +713,17 @@ class MainWindow:
 
         # print("image flip:", self.image_flip,
         #       "image flipped:", self.image_flipped)
+
+    def reset_from_session_mode(self):
+        self.new_session_started = False
+        self.timer_Window_exists = False
+        self.exited_load_imgdir = True
+        if not self.timer_bar_hidden:
+            self.timer_bar_hidden = True
+            self.canvas.tag_raise('image', 'all')
+        self.file_menu.entryconfig("Edit Session", state='disabled')
+        self.file_menu.entryconfig("Save Session", state='disabled')
+        self.menubar.entryconfig("Timed Session", state='disabled')
 
     def set_path(self):
         # self.image_path.set(self.filenames_list[self.image_index])
@@ -950,6 +951,10 @@ class MainWindow:
         bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
 
     def start_session(self):
+        self.file_menu.entryconfig("Edit Session", state='normal')
+        self.file_menu.entryconfig("Save Session", state='normal')
+        self.menubar.entryconfig('Timed Session', state='normal')
+
         self.new_session_win.destroy()
         for item in self.new_folders_list:
             self.scan_images(item)
@@ -984,7 +989,6 @@ class MainWindow:
             print(" first timer window created")
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
-        self.menubar.entryconfig('Timed Session', state='normal')
 
     def hide_show_timer_bar(self):
         if self.timer_bar_hidden:
