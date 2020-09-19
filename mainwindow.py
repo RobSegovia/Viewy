@@ -119,16 +119,21 @@ class MainWindow:
         self.first_session_run = False
         self.exited_load_imgdir = False
 
-        self.timer_x0 = 0
-        self.timer_x1 = 0
-        self.timer_y0 = 0
-        self.timer_y1 = 0
-        self.rect_x1 = 0
+        # TODO use to save state of session
+        self.session_state_list = []
+
+        self.edit_session_clicked = False
+
+        # self.timer_x0 = 0
+        # self.timer_x1 = 0
+        # self.timer_y0 = 0
+        # self.timer_y1 = 0
+        # self.rect_x1 = 0
         self.TIMER_BAR_WIDTH = 250
         self.TIMER_BAR_HEIGHT = 12
-        self.TIMER_WIN_X = 250
-        self.TIMER_WIN_Y = 12
-        self.progress_value = 0
+        # self.TIMER_WIN_X = 250
+        # self.TIMER_WIN_Y = 12
+        # self.progress_value = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -949,16 +954,26 @@ class MainWindow:
             self.new_session_win, textvariable=self.new_session_info_msg)
         bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
 
+        if self.edit_session_clicked:
+            print("Populate the window with self.session_state_list")
+
     def start_session(self):
+        self.session_state_list.clear()
         self.file_menu.entryconfig("Edit Session", state='normal')
         self.file_menu.entryconfig("Save Session", state='normal')
         self.menubar.entryconfig('Timed Session', state='normal')
 
         self.new_session_win.destroy()
+
         for item in self.new_folders_list:
             self.scan_images(item)
         self.filenames_list = self.temp_new_filenames_list.copy()
         self.temp_new_filenames_list.clear()
+
+        # Add folders info to state list
+        self.session_state_list.append(
+            ("Folders list (for session win.)", self.new_folders_list))
+        self.session_state_list.append(("Filenames list", self.filenames_list))
 
         self.restore_menu_items()
         self.image_exists = True
@@ -966,12 +981,24 @@ class MainWindow:
         self.total_images = self.new_session_image_counter
         self.load()
 
+        # Add total images
+        self.session_state_list.append(
+            ("Total image count", self.total_images))
+
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
         # set the first interval
         self.current_interval = self.time_interval_list[0]
         self.current_interval_index = 0
         self.time_diff = 0
+
+        # Add time intervals
+        self.session_state_list.append(
+            ("Interval list", self.time_interval_list))
+        self.session_state_list.append(
+            ("Current interval Index", self.current_interval_index))
+        self.session_state_list.append(
+            ("Current interval", self.current_interval))
 
         self.timer_activated = True
         self.new_session_started = True
@@ -1409,7 +1436,7 @@ class MainWindow:
                 self.load()
                 self.reset_timer()
 
-                self.progress_value = 0
+                # self.progress_value = 0
 
             n = self.TIMER_BAR_WIDTH / self.current_interval
             n = 1 / n * 1000
@@ -1439,13 +1466,16 @@ class MainWindow:
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
-        pass
+        self.edit_session_clicked = True
+        self.new_session()
 
     def save_session(self):
+        # TODO has to have its own new window
         # use pickle ??
         pass
 
     def load_session(self):
+        # TODO same as 'save session' but sightly diff ?
         pass
 
     def zoom(self, event):
@@ -1455,9 +1485,6 @@ class MainWindow:
             self.zoom_out()
 
     def zoom_in(self, event=None):
-        # print("Find image:", self.canvas.find_withtag('image')[0])
-        # try:
-        # TODO bug when click Zoom In menu
         if self.image_exists:
             if (self.zoom_index < 7):
                 self.zoom_index += 1
@@ -1471,10 +1498,6 @@ class MainWindow:
                 # print("Zoom value:", self.zoom_value)
                 # print()
                 self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
-            # elif event.delta < 0:
-            #     self.zoom_out(event)
-        # except:
-        #     print("-> No image loaded yet to zoom into")
 
     def zoom_out(self, event=None):
         if self.zoom_index > 0:
@@ -1604,8 +1627,6 @@ class MainWindow:
         size_box.grid(row=4, column=3, sticky='w')
 
     def open_folder(self):
-        # subprocess.Popen(
-        #     r'explorer /select,"{}"'.format(self.image_path.get()), shell=True)
         folder_path = os.path.split(os.path.abspath(self.image_path.get()))
         os.startfile(folder_path[0])
         # print(folder_path[0])
@@ -1725,9 +1746,6 @@ class MainWindow:
     def median(self):
         pass
 
-    # def upscale(self):
-    #     pass
-
     # disable randomizer until image is loaded
     def randomizer(self):
         if self.random_on.get() == 1:
@@ -1763,8 +1781,6 @@ class MainWindow:
         self.win_width = self.screen_width-8
         mainWindow.geometry("{}x{}+{}+{}".format(self.win_width,
                                                  mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
-        # if self.image_exists:
-        #     self.refresh_image()
 
     def fit_screen_height(self):
         self.win_location()
@@ -1775,8 +1791,6 @@ class MainWindow:
         print("Screen height:", self.screen_height)
         mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
                                                  self.win_height, self.win_x_offset, self.win_y_offset))
-        # if self.image_exists:
-        #     self.refresh_image()
 
     @ staticmethod
     def max_window():
@@ -1841,12 +1855,6 @@ class MainWindow:
         else:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
-        # self.refresh_image()
-
-    # def refresh_geometry(self):
-    #     self.win_location()
-    #     mainWindow.geometry("{}x{}+{}+{}".format(mainWindow.winfo_width(),
-    #                                              mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
 
     def win_fit_size(self):
         self.win_location()
@@ -1867,12 +1875,6 @@ class MainWindow:
         else:
             mainWindow.state('zoomed')  # maximize window
 
-    # def show_sidebar(self):
-    #     pass
-
-    # def hide_sidebar(self):
-    #     pass
-
     def b1_release(self, event):
         self.b1_released = True
         self.prev_px = None
@@ -1880,12 +1882,6 @@ class MainWindow:
         # print("\t\t\t\t\t\tB1 released - prev_px =", self.prev_px)
 
     def drag_image(self, event=None):
-        # self.refresh_geometry()
-
-        # TODO: If image is < window size on any side,
-        # the position jumps to side/top when starting to drag.
-        # When the window is resized even slightly, the image centers itself where it's supposed to be,
-        # also the vert scrollbar activates tho it doesn't have to.
 
         if self.image_exists and not (
             (self.image_width <= self.canvas.winfo_width()
@@ -2018,14 +2014,6 @@ class MainWindow:
             self.tk_image.image = self.tk_image
 
         self.initial_scroll_pos = True
-
-        # runs if first mode upon starting program is session mode
-        # if not self.timer_bar_frame_exists and self.new_session_started and self.image_exists:
-        #     # self.draw_timer_window()
-        #     self.timer_bar_frame_exists = True
-        #     print(" first timer window created")
-        # elif self.timer_bar_frame_exists and self.image_exists:
-        #     self.update_timer_bar()
 
         # print("Win width:", mainWindow.winfo_width(),
         #       "Img width:", self.image_width)
