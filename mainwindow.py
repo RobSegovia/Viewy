@@ -113,9 +113,9 @@ class MainWindow:
         self.current_interval_copy = 0
         self.time_start = 0.0
         self.time_diff = 0.0
-        self.timer_window_exists = False
+        self.timer_bar_frame_exists = False
         self.new_session_started = False
-        self.timer_bar_hidden = False
+        self.timer_bar_hidden = True
         self.first_session_run = False
         self.exited_load_imgdir = False
 
@@ -125,6 +125,7 @@ class MainWindow:
         self.timer_y1 = 0
         self.rect_x1 = 0
         self.TIMER_BAR_WIDTH = 250
+        self.TIMER_BAR_HEIGHT = 12
         self.TIMER_WIN_X = 250
         self.TIMER_WIN_Y = 12
         self.progress_value = 0
@@ -483,8 +484,6 @@ class MainWindow:
                 # returns tuple of image paths
                 self.dir_path = tkinter.filedialog.askdirectory(
                     title="Select a directory of images to load")
-                # this index is always 0 here, it will get ++ or -- as images are iterated later
-                self.image_index = 0
 
                 for file_name in os.listdir(self.dir_path):
                     full_path = os.path.join(self.dir_path, file_name)
@@ -501,6 +500,9 @@ class MainWindow:
 
                 self.total_images = len(self.new_filenames_list)
                 assert self.total_images >= 1
+
+                # this index is always 0 here, it will get ++ or -- as images are iterated later
+                self.image_index = 0
 
             except FileNotFoundError:
                 # raise
@@ -526,16 +528,10 @@ class MainWindow:
                         len(self.filenames_list)))
                 self.restore_menu_items()
 
-            self.reset_from_session_mode()
+                self.reset_from_session_mode()
 
             self.load_dir_var.set(0)
 
-        # if a key has been pressed, cycle to next/prev image
-        # if event is not None:
-        #     if event.keysym == 'Right' and self.image_index < len(self.filenames_list) - 1:
-        #         self.image_index += 1
-        #     elif event.keysym == 'Left' and self.image_index > 0:
-        #         self.image_index -= 1
         if self.next_image is not None:
             if self.next_image == 'Right' and self.image_index < len(self.filenames_list) - 1:
                 self.image_index += 1
@@ -552,6 +548,7 @@ class MainWindow:
                 # print(self.filenames_list[self.image_index])
                 self.cv2_image = cv2.imread(
                     self.filenames_list[self.image_index])
+                print("image index:", self.image_index)
 
                 try:
                     # convert to PIL colour order
@@ -717,11 +714,12 @@ class MainWindow:
 
     def reset_from_session_mode(self):
         self.new_session_started = False
-        self.timer_Window_exists = False
         self.exited_load_imgdir = True
+        self.timer_paused = True
         if not self.timer_bar_hidden:
             self.timer_bar_hidden = True
-            self.canvas.tag_raise('image', 'all')
+            self.timer_bar_frame.pack_forget()
+
         self.file_menu.entryconfig("Edit Session", state='disabled')
         self.file_menu.entryconfig("Save Session", state='disabled')
         self.menubar.entryconfig("Timed Session", state='disabled')
@@ -978,30 +976,44 @@ class MainWindow:
         self.timer_activated = True
         self.new_session_started = True
         self.first_session_run = True
-        self.timer_window_exists = False
+        self.timer_bar_hidden = False
 
         # runs in case the previous mode used was not session mode
         if self.exited_load_imgdir:
             self.exited_load_imgdir = False
 
-            self.draw_timer_window()
-            self.timer_window_exists = True
+            # self.timer_bar_frame_exists = True
             self.timer_bar_hidden = False
             print(" first timer window created")
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
 
+        # create bar if not already created
+        if not self.timer_bar_frame_exists:
+            self.timer_bar_frame_exists = True
+
+            self.timer_bar_frame = tkinter.Frame(
+                self.canvas, height=12, width=250)
+            self.timer_bar_frame.pack(side='bottom')
+            self.timer_canvas = tkinter.Canvas(
+                self.timer_bar_frame, width=250, height=12, bg='white')
+            self.timer_canvas.pack(fill='both')
+            self.timer_bar = self.timer_canvas.create_rectangle(
+                0, 0, 0, self.TIMER_BAR_HEIGHT, fill='#33ff00', tags='timer_bar')
+
+        self.timer_bar_frame.pack(side='bottom')
+        # reset bar progress
+        self.timer_canvas.coords('timer_bar', 0, 0, 0, 12)
+
     def hide_show_timer_bar(self):
         if self.timer_bar_hidden:
+            self.timer_bar_frame.pack(side='bottom')
             self.timer_bar_hidden = False
-            self.canvas.tag_raise('timer_window', 'all')
-            self.canvas.tag_raise('timer_bar', 'all')
         else:
+            self.timer_bar_frame.pack_forget()
             self.timer_bar_hidden = True
-            self.canvas.tag_raise('image', 'all')
 
     def add_dir(self):
-        # self.new_filenames_list.clear()
 
         if self.incl_subdirs_var.get() == 1:
             # print("Include subdirectories")
@@ -1312,12 +1324,12 @@ class MainWindow:
             if event.keysym == 'Right':
                 self.next_image = 'Right'
                 self.load()
-                if self.timer_window_exists:
+                if self.timer_bar_frame_exists:
                     self.reset_timer()
             elif event.keysym == 'Left':
                 self.next_image = 'Left'
                 self.load()
-                if self.timer_window_exists:
+                if self.timer_bar_frame_exists:
                     self.reset_timer()
             elif event.keysym == 'r':
                 self.load()
@@ -1327,14 +1339,14 @@ class MainWindow:
                         self.current_interval_index -= 1
                         self.current_interval = self.time_interval_list[self.current_interval_index]
                         self.interval_in_mins_secs()
-                        self.recalc_interval()
+
                 elif event.keysym == 's':
                     if self.current_interval_index < len(self.time_interval_list)-1:
                         # print("len()", len(self.time_interval_list))
                         self.current_interval_index += 1
                         self.current_interval = self.time_interval_list[self.current_interval_index]
                         self.interval_in_mins_secs()
-                        self.recalc_interval()
+
                 elif event.keysym == 'h':
                     self.hide_show_timer_bar()
 
@@ -1356,12 +1368,12 @@ class MainWindow:
                     #     self.current_interval -= self.time_diff
 
                     if self.first_session_run:
-                        self.update_timer_bar()
+                        # self.update_timer_bar()
                         self.reset_timer()
                         self.first_session_run = False
                         # self.timer_bar_hidden = False
-                        self.canvas.tag_raise('timer_window', 'all')
-                        self.canvas.tag_raise('timer_bar', 'all')
+                        # self.canvas.tag_raise('timer_window', 'all')
+                        # self.canvas.tag_raise('timer_bar', 'all')
                         print("First session run")
                     self.run_timer()
 
@@ -1385,16 +1397,12 @@ class MainWindow:
             # print("\tSeconds elapsed: {:.3f}".format(self.time_diff))
 
             percentage_done = self.time_diff / self.current_interval  # percentage
-            self.rect_x1 = self.timer_x0 + self.TIMER_BAR_WIDTH * percentage_done
 
-            # NOTE PROGRESS BAR
-            # self.progress_value += factor
-            self.progress_bar['value'] = percentage_done * 100
+            self.timer_canvas.coords(
+                'timer_bar', 0, 0, self.TIMER_BAR_WIDTH * percentage_done, self.TIMER_BAR_HEIGHT)
 
-            # print("self.rect_x1:", self.rect_x1)
-            self.canvas.coords('timer_bar', self.timer_x0,
-                               self.timer_y0, self.rect_x1, self.timer_y1)
             if self.time_diff > self.current_interval:
+
                 # reset the interval
                 self.current_interval = self.current_interval_copy
                 self.next_image = 'Right'
@@ -1409,19 +1417,12 @@ class MainWindow:
 
             self.canvas.after(int(n), self.run_timer)
 
-    def recalc_interval(self):
-        factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
-                  self.current_interval) / self.current_interval / 20
-        self.rect_x1 = self.timer_x0-10 + self.TIMER_BAR_WIDTH * \
-            (self.time_diff / self.current_interval)
-        self.canvas.coords('timer_bar', self.timer_x0,
-                           self.timer_y0, self.rect_x1, self.timer_y1)
-
     def reset_timer(self):
-        if self.timer_window_exists:
-            # have to minus 1 sec to get correct interval
-            self.time_start = time.time() - 1
+        if self.timer_bar_frame_exists:
+            self.time_start = time.time()
             self.time_diff = 0.0
+            self.timer_canvas.coords(
+                'timer_bar', 0, 0, 0, self.TIMER_BAR_HEIGHT)
             # print("in RESET:")
             # print("\t", self.current_interval,
             #       self.current_interval_index, self.time_interval_list)
@@ -1435,70 +1436,6 @@ class MainWindow:
     def prev_interval(self):
         mainWindow.event_generate('<Key>', keysym='a', when='tail')
         # print("Previous interval ←")
-
-    def draw_timer_window(self):
-
-        self.win_dimensions()
-
-        # NOTE
-        self.progress_bar = tkinter.ttk.Progressbar(
-            self.canvas, orient='horizontal', length=250, mode='determinate')
-        self.progress_bar.pack(side='bottom')
-
-        x0 = (self.canvas_width / 2) - self.TIMER_WIN_X/2
-        x1 = (self.canvas_width / 2) + self.TIMER_WIN_X/2
-        y0 = self.win_height - 42 - self.TIMER_WIN_Y
-        y1 = self.win_height - 44
-        self.rect_x1 = x1
-        self.timer_window = self.canvas.create_rectangle(
-            x0, y0, x1, y1, fill='#dedede', tags='timer_window')
-        self.timer_bar = self.canvas.create_rectangle(
-            x0, y0, x0, y1, fill='#33ff00', tags='timer_bar'
-        )
-        self.canvas.tag_raise('timer_window', 'all')
-        self.canvas.tag_raise('timer_bar', 'all')
-
-        print(self.canvas.find_all())
-        for item in self.canvas.find_all():
-            print(self.canvas.gettags(item))
-
-        # print('rect created')
-
-        # TODO - another option is to try to create a Toplevel window,
-        # which stays topmost and has no titlebar; it will become transparent
-        # when hovered out, and maybe even allow custom transparency
-
-        # button1 = tkinter.Button(self.canvas, text="Quit", anchor='w')
-        # button1.configure(width=10, activebackground="#33B5E5")
-        # button1_window = self.canvas.create_window(
-        #     10, 10, anchor='nw', window=button1)
-
-    def update_timer_bar(self):
-        self.win_dimensions()
-
-        self.timer_x0 = (self.canvas_width / 2) - self.TIMER_WIN_X/2
-        self.timer_x1 = (self.canvas_width / 2) + self.TIMER_WIN_X/2
-        self.timer_y0 = self.win_height - 42 - self.TIMER_WIN_Y
-        self.timer_y1 = self.win_height - 44
-
-        self.canvas.coords('timer_window', self.timer_x0,
-                           self.timer_y0, self.timer_x1, self.timer_y1)
-
-        # Added 2px so that the timer bar reaches the end of the timer window
-        # before the image changes
-        self.rect_x1 = self.timer_x0 + 2
-
-        self.canvas.coords('timer_bar', self.timer_x0,
-                           self.timer_y0, self.rect_x1, self.timer_y1)
-
-        if self.timer_bar_hidden:
-            self.canvas.tag_raise('image', 'all')
-        else:
-            # raise the timer window above all items
-            # repeat for the timer bar
-            self.canvas.tag_raise('timer_window', 'all')
-            self.canvas.tag_raise('timer_bar', 'all')
-            print("timer bar should be showing normally")
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
@@ -2083,12 +2020,12 @@ class MainWindow:
         self.initial_scroll_pos = True
 
         # runs if first mode upon starting program is session mode
-        if not self.timer_window_exists and self.new_session_started and self.image_exists:
-            self.draw_timer_window()
-            self.timer_window_exists = True
-            print(" first timer window created")
-        elif self.timer_window_exists and self.image_exists:
-            self.update_timer_bar()
+        # if not self.timer_bar_frame_exists and self.new_session_started and self.image_exists:
+        #     # self.draw_timer_window()
+        #     self.timer_bar_frame_exists = True
+        #     print(" first timer window created")
+        # elif self.timer_bar_frame_exists and self.image_exists:
+        #     self.update_timer_bar()
 
         # print("Win width:", mainWindow.winfo_width(),
         #       "Img width:", self.image_width)
