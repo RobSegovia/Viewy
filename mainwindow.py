@@ -127,6 +127,7 @@ class MainWindow:
         self.TIMER_BAR_WIDTH = 250
         self.TIMER_WIN_X = 250
         self.TIMER_WIN_Y = 12
+        self.progress_value = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -1381,19 +1382,14 @@ class MainWindow:
 
             self.time_diff = time.time() - self.time_start
             # print("\ttime diff:", self.time_diff)
-            # print("\tSeconds elapsed: {:.0f}".format(self.time_diff))
+            # print("\tSeconds elapsed: {:.3f}".format(self.time_diff))
 
-            # makes the timer bar advance over time
-            factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
-                      self.current_interval) / self.current_interval / 20
-            # time_chunks = (self.current_interval * 1000 / 50)
-            # time_chunks = (self.current_interval * 20)
-            # pixel_amount = self.TIMER_BAR_WIDTH / time_chunks
-            self.rect_x1 = self.rect_x1 + factor
+            percentage_done = self.time_diff / self.current_interval  # percentage
+            self.rect_x1 = self.timer_x0 + self.TIMER_BAR_WIDTH * percentage_done
 
-            # NOTE this way kind of works and is simpler but the other way is more accurate
-            # n = self.TIMER_BAR_WIDTH / self.current_interval
-            # self.rect_x1 = self.rect_x1 + 1
+            # NOTE PROGRESS BAR
+            # self.progress_value += factor
+            self.progress_bar['value'] = percentage_done * 100
 
             # print("self.rect_x1:", self.rect_x1)
             self.canvas.coords('timer_bar', self.timer_x0,
@@ -1405,11 +1401,13 @@ class MainWindow:
                 self.load()
                 self.reset_timer()
 
-            # NOTE goes with note above
-            # n = 1 / n * 1000
-            # run time check again in n secs
-            # self.canvas.after(int(n), self.run_timer)
-            self.canvas.after(50, self.run_timer)
+                self.progress_value = 0
+
+            n = self.TIMER_BAR_WIDTH / self.current_interval
+            n = 1 / n * 1000
+            # print(n)
+
+            self.canvas.after(int(n), self.run_timer)
 
     def recalc_interval(self):
         factor = (self.TIMER_BAR_WIDTH + self.TIMER_BAR_WIDTH /
@@ -1441,6 +1439,11 @@ class MainWindow:
     def draw_timer_window(self):
 
         self.win_dimensions()
+
+        # NOTE
+        self.progress_bar = tkinter.ttk.Progressbar(
+            self.canvas, orient='horizontal', length=250, mode='determinate')
+        self.progress_bar.pack(side='bottom')
 
         x0 = (self.canvas_width / 2) - self.TIMER_WIN_X/2
         x1 = (self.canvas_width / 2) + self.TIMER_WIN_X/2
