@@ -15,6 +15,7 @@ import webbrowser
 import subprocess
 import threading
 import time
+import pickle
 # TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
@@ -120,7 +121,7 @@ class MainWindow:
         self.exited_load_imgdir = False
 
         # TODO use to save state of session
-        self.session_state_list = []
+        self.session_state_list = [[]]
 
         self.edit_session_clicked = False
 
@@ -969,7 +970,7 @@ class MainWindow:
             self.remove_interval_label.config(state='normal')
             self.start_button.config(state='normal')
 
-            self.populate_dir_box(self.temp_list)
+            self.populate_dir_box(self.session_state_list[0])
 
             # reset list so it can be repopulated below
             self.time_interval_list.clear()
@@ -1087,6 +1088,8 @@ class MainWindow:
                     # Populate self.dir_box with folders
                     self.populate_dir_box(self.temp_list)
 
+                    self.session_state_list[0].append(self.temp_list)
+
             except PermissionError:
                 raise
                 print("- Permission Error")
@@ -1104,6 +1107,8 @@ class MainWindow:
                 if path not in self.new_folders_list and not path == '':
                     self.new_folders_list.append(path)
                     self.dir_box.insert(tkinter.END, path)
+
+                    self.session_state_list[0].append(path)
 
                 self.new_session_image_counter += self.recount_images(path)
 
@@ -1484,13 +1489,25 @@ class MainWindow:
         self.new_session()
 
     def save_session(self):
-        # TODO has to have its own new window
-        # use pickle ??
-        pass
+
+        file = tkinter.filedialog.asksaveasfilename(
+            title='Save Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
+
+        with open(file, 'wb') as pickle_file:
+            pickle.dump(self.session_state_list, pickle_file)
+
+        print("\t>>> Saved session!")
 
     def load_session(self):
-        # TODO same as 'save session' but sightly diff ?
-        pass
+
+        file = tkinter.filedialog.askopenfilename(
+            title='Load Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
+
+        with open(file, 'rb') as pickle_file:
+            self.session_state_list = pickle.load(pickle_file)
+
+        print(self.session_state_list)
+        print("\t>>> Load successful !")
 
     def zoom(self, event):
         if event.delta > 0:
