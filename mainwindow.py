@@ -753,12 +753,14 @@ class MainWindow:
 
     def new_session(self):
 
-        self.new_session_info(0, 0)
-        self.new_session_image_counter = 0
+        if not self.edit_session_clicked:
+            self.new_session_info(0, 0)
+            self.new_session_image_counter = 0
+            self.temp_new_filenames_list.clear()
+            self.time_interval_list.clear()
+            self.incl_subdirs_var.set(0)
+
         self.new_folders_list.clear()
-        self.temp_new_filenames_list.clear()
-        self.time_interval_list.clear()
-        self.incl_subdirs_var.set(0)
 
         self.win_location()
         self.new_session_win = tkinter.Toplevel()
@@ -954,11 +956,37 @@ class MainWindow:
             self.new_session_win, textvariable=self.new_session_info_msg)
         bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
 
+        # EDIT SESSION MODE
         if self.edit_session_clicked:
-            print("Populate the window with self.session_state_list")
+            self.new_session_win.title('Edit current Session')
+
+            self.remove_dir_button.config(state='normal')
+            self.remove_dir_label.config(state='normal')
+            self.add_time_button.config(state='normal')
+            self.move_interval_up_btn.config(state='normal')
+            self.move_interval_down_btn.config(state='normal')
+            self.remove_interval_button.config(state='normal')
+            self.remove_interval_label.config(state='normal')
+            self.start_button.config(state='normal')
+
+            self.populate_dir_box(self.temp_list)
+
+            # reset list so it can be repopulated below
+            self.time_interval_list.clear()
+
+            for item in self.orig_interval_list:
+                self.time_interval_list.append((item[0], item[1]))
+                interval = "  {} mins : {} secs".format(item[0], item[1])
+                self.intervals_box.insert('end', interval)
+
+            # update which info message
+            self.new_session_info(len(self.new_folders_list),
+                                  self.new_session_image_counter)
+
+            self.edit_session_clicked = False
 
     def start_session(self):
-        self.session_state_list.clear()
+
         self.file_menu.entryconfig("Edit Session", state='normal')
         self.file_menu.entryconfig("Save Session", state='normal')
         self.menubar.entryconfig('Timed Session', state='normal')
@@ -970,20 +998,11 @@ class MainWindow:
         self.filenames_list = self.temp_new_filenames_list.copy()
         self.temp_new_filenames_list.clear()
 
-        # Add folders info to state list
-        self.session_state_list.append(
-            ("Folders list (for session win.)", self.new_folders_list))
-        self.session_state_list.append(("Filenames list", self.filenames_list))
-
         self.restore_menu_items()
         self.image_exists = True
         self.image_index = 0
         self.total_images = self.new_session_image_counter
         self.load()
-
-        # Add total images
-        self.session_state_list.append(
-            ("Total image count", self.total_images))
 
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
@@ -991,14 +1010,6 @@ class MainWindow:
         self.current_interval = self.time_interval_list[0]
         self.current_interval_index = 0
         self.time_diff = 0
-
-        # Add time intervals
-        self.session_state_list.append(
-            ("Interval list", self.time_interval_list))
-        self.session_state_list.append(
-            ("Current interval Index", self.current_interval_index))
-        self.session_state_list.append(
-            ("Current interval", self.current_interval))
 
         self.timer_activated = True
         self.new_session_started = True
@@ -1073,7 +1084,7 @@ class MainWindow:
                     for folder in empty_folder_list:  #
                         self.temp_list.remove(folder)    #
 
-                    # Populate self.self.dir_box with folders
+                    # Populate self.dir_box with folders
                     self.populate_dir_box(self.temp_list)
 
             except PermissionError:
@@ -1148,6 +1159,7 @@ class MainWindow:
         return recurs_list
 
     def populate_dir_box(self, folderlist):
+        print("\tPopulated dir_box !")
         for item in folderlist:
             if type(item) == str:
                 # print("\t" * self.tabs, item)
@@ -1156,12 +1168,14 @@ class MainWindow:
 
                     folder = " " * self.tabs + item
                     self.dir_box.insert(tkinter.END, folder)
+                    print("\t\tItem inserted")
             else:
                 self.tabs += 4
                 self.populate_dir_box(item)
                 self.tabs -= 4
 
     # prints folder structure in tabbed form according to hierarchy
+
     def _print_path_list(self, tlist):
         for item in tlist:
             # print(type(item))
