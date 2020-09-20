@@ -103,6 +103,8 @@ class MainWindow:
         self.diffy = 0
         self.b1_released = True
 
+        self.new_session_win_exists = False
+        self.session_loaded = False
         self.temp_list = []
         self.tabs = 0
         self.time_interval_list = []
@@ -121,7 +123,8 @@ class MainWindow:
         self.exited_load_imgdir = False
 
         # TODO use to save state of session
-        self.session_state_list = [[]]
+        self.session_state_list = []
+        self.edit_session_path_list = [[]]
 
         self.edit_session_clicked = False
 
@@ -754,6 +757,8 @@ class MainWindow:
 
     def new_session(self):
 
+        self.new_session_win_exists = True
+
         if not self.edit_session_clicked:
             self.new_session_info(0, 0)
             self.new_session_image_counter = 0
@@ -970,7 +975,7 @@ class MainWindow:
             self.remove_interval_label.config(state='normal')
             self.start_button.config(state='normal')
 
-            self.populate_dir_box(self.session_state_list[0])
+            self.populate_dir_box(self.edit_session_path_list[0])
 
             # reset list so it can be repopulated below
             self.time_interval_list.clear()
@@ -992,7 +997,8 @@ class MainWindow:
         self.file_menu.entryconfig("Save Session", state='normal')
         self.menubar.entryconfig('Timed Session', state='normal')
 
-        self.new_session_win.destroy()
+        if self.new_session_win_exists:
+            self.new_session_win.destroy()
 
         for item in self.new_folders_list:
             self.scan_images(item)
@@ -1005,8 +1011,10 @@ class MainWindow:
         self.total_images = self.new_session_image_counter
         self.load()
 
-        # convert intervals from mins:secs to all secs
-        self.interval_in_seconds()
+        if not self.session_loaded:
+            # convert intervals from mins:secs to all secs
+            self.interval_in_seconds()
+
         # set the first interval
         self.current_interval = self.time_interval_list[0]
         self.current_interval_index = 0
@@ -1088,7 +1096,7 @@ class MainWindow:
                     # Populate self.dir_box with folders
                     self.populate_dir_box(self.temp_list)
 
-                    self.session_state_list[0].append(self.temp_list)
+                    self.edit_session_path_list[0].append(self.temp_list)
 
             except PermissionError:
                 raise
@@ -1108,7 +1116,7 @@ class MainWindow:
                     self.new_folders_list.append(path)
                     self.dir_box.insert(tkinter.END, path)
 
-                    self.session_state_list[0].append(path)
+                    self.edit_session_path_list[0].append(path)
 
                 self.new_session_image_counter += self.recount_images(path)
 
@@ -1490,6 +1498,23 @@ class MainWindow:
 
     def save_session(self):
 
+        # Save state
+        self.session_state_list.append(self.new_folders_list)
+        self.session_state_list.append(self.filenames_list)
+        self.session_state_list.append(self.temp_new_filenames_list)
+        self.session_state_list.append(self.total_images)
+        self.session_state_list.append(self.new_session_image_counter)
+        self.session_state_list.append(self.time_interval_list)
+        self.session_state_list.append(self.current_interval)
+        self.session_state_list.append(self.current_interval_index)
+        self.session_state_list.append(self.incl_subdirs_var.get())
+        self.session_state_list.append(self.orig_interval_list)
+        # print()
+        # # print(type(self.session_state_list))
+        # for item in self.session_state_list:
+        #     print(type(item))
+        # print("len - ", len(self.session_state_list))
+
         file = tkinter.filedialog.asksaveasfilename(
             title='Save Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
 
@@ -1506,7 +1531,24 @@ class MainWindow:
         with open(file, 'rb') as pickle_file:
             self.session_state_list = pickle.load(pickle_file)
 
-        print(self.session_state_list)
+        self.new_folders_list = self.session_state_list[0].copy()
+        self.filenames_list = self.session_state_list[1].copy()
+        self.temp_new_filenames_list = self.session_state_list[2].copy()
+        self.total_images = self.session_state_list[3]
+        self.new_session_image_counter = self.session_state_list[4]
+        self.time_interval_list = self.session_state_list[5].copy()
+        self.current_interval = self.session_state_list[6]
+        self.current_interval_index = self.session_state_list[7]
+        self.incl_subdirs_var.set(self.session_state_list[8])
+        self.orig_interval_list = self.session_state_list[9].copy()
+
+        self.session_state_list.clear()
+
+        self.session_loaded = True
+        self.start_session()
+        self.session_loaded = False
+
+        # print(self.session_state_list)
         print("\t>>> Load successful !")
 
     def zoom(self, event):
