@@ -72,6 +72,7 @@ class MainWindow:
         self.total_images = None
         self.image_exists = False
         self.new_session_image_counter = 0
+        self.temp_image_counter = 0
         self.next_image = None
 
         self.load_image_var = tkinter.IntVar()
@@ -108,6 +109,7 @@ class MainWindow:
         self.temp_list = []
         self.tabs = 0
         self.time_interval_list = []
+        self.temp_time_interval_list = []
         self.orig_interval_list = []
         self.current_interval_index = 0
         self.current_interval = 0
@@ -761,12 +763,15 @@ class MainWindow:
 
         self.new_session_win_exists = True
 
-        # if not self.edit_session_clicked:
-        #     self.new_session_info(0, 0)
-        #     self.new_session_image_counter = 0
-        #     self.temp_new_filenames_list.clear()
-        #     self.time_interval_list.clear()
-        #     self.incl_subdirs_var.set(0)
+        if not self.edit_session_clicked:
+            self.new_session_info(0, 0)  # exclusive to session window
+            self.incl_subdirs_var.set(0)  # exclusive to session window
+
+            # self.new_session_image_counter = 0  # causes empty image counter
+            self.temp_image_counter = 0  # causes empty image counter
+            self.temp_new_filenames_list.clear()  # causes empty dir_box ?
+            self.temp_time_interval_list.clear()  # causes empty interval box
+            # self.time_interval_list.clear()  # causes empty interval box
 
         self.new_folders_list.clear()
 
@@ -964,12 +969,19 @@ class MainWindow:
             self.new_session_win, textvariable=self.new_session_info_msg)
         bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
 
+        # # reset list so it can be repopulated below
+        # # self.time_interval_list.clear()
+
+        # # update which info message
+        # self.new_session_info(len(self.new_folders_list),
+        #                       self.new_session_image_counter)
+
         # elif self.start_clicked:
         # print("paths cleared")
         # self.edit_session_path_list.clear()
         # self.temp_edit_session_path_list.clear()
 
-        # self.start_clicked = False
+        self.start_clicked = False
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
@@ -988,21 +1000,28 @@ class MainWindow:
 
         self.populate_dir_box(self.edit_session_path_list)
 
-        print("EDIT time intrvl list", self.time_interval_list)
+        # reset list so it can be repopulated below
+        # self.time_interval_list.clear()
+
         for item in self.time_interval_list:
             print("intr box populated")
 
             interval = "  {} mins : {} secs".format(item[0], item[1])
             self.intervals_box.insert('end', interval)
 
+        # temp time interval normally gets populated when new intervals are added
+        # but stm it's empty, so must copy existing intervals otherwise
+        # interval list will be empty when press start
+        self.temp_time_interval_list = self.time_interval_list.copy()
+
         # update which info message
         self.new_session_info(len(self.new_folders_list),
                               self.new_session_image_counter)
 
         self.edit_session_clicked = False
+        print()
 
     def start_session(self):
-        print("START")
         self.start_clicked = True
 
         self.file_menu.entryconfig("Edit Session", state='normal')
@@ -1012,23 +1031,20 @@ class MainWindow:
         if self.new_session_win_exists:
             self.new_session_win.destroy()
 
-        # print("new folders list - ", self.new_folders_list)
         for item in self.new_folders_list:
             self.scan_images(item)
         self.filenames_list = self.temp_new_filenames_list.copy()
         self.temp_new_filenames_list.clear()
 
         if not self.session_loaded:
-            # moved here from new_session
-            # self.new_session_info(0, 0)
-            # self.new_session_image_counter = 0
-            # self.temp_new_filenames_list.clear()
-            # self.time_interval_list.clear()
-            # self.incl_subdirs_var.set(0)
+            self.new_session_image_counter = self.temp_image_counter
+            self.time_interval_list = self.temp_time_interval_list.copy()
+
+            # self.
 
             self.image_index = 0
             self.current_interval_index = 0
-            print('edit sess', self.edit_session_path_list)
+            print('S edit sess', self.edit_session_path_list)
 
             for item in self.temp_edit_session_path_list:
                 self.edit_session_path_list.append(item)
@@ -1038,16 +1054,16 @@ class MainWindow:
             self.edit_session_path_list = self.temp_edit_session_path_list.copy()
             self.temp_edit_session_path_list.clear()
 
-        # print("edit session list", self.edit_session_path_list)
+        print("S edit session list", self.edit_session_path_list)
 
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
 
         self.restore_menu_items()
         self.image_exists = True
+        # self.total_images = self.new_session_image_counter
         self.total_images = self.new_session_image_counter
         self.load()
-        # print("START time intrvl list", self.time_interval_list)
 
         # set the first interval
         self.current_interval = self.time_secs_interval_list[self.current_interval_index]
@@ -1152,10 +1168,12 @@ class MainWindow:
                     self.new_folders_list.append(path)
                     self.dir_box.insert(tkinter.END, path)
 
+                    # backup copy for EDIT session
                     self.temp_edit_session_path_list.append(path)
-                    print(self.edit_session_path_list)
+                    # print(self.edit_session_path_list)
 
-                self.new_session_image_counter += self.recount_images(path)
+                # self.new_session_image_counter += self.recount_images(path)
+                self.temp_image_counter += self.recount_images(path)
 
             except FileNotFoundError:
                 print("- Folder not added")
@@ -1165,7 +1183,8 @@ class MainWindow:
                 self.add_time_button.config(state='normal')
 
         self.new_session_info(len(self.new_folders_list),
-                              self.new_session_image_counter)
+                              self.temp_image_counter)
+        #   self.new_session_image_counter)
 
     def remove_dir(self):
         items = self.dir_box.curselection()
@@ -1173,19 +1192,19 @@ class MainWindow:
         for item in reversed(items):
             self.dir_box.delete(item)
 
-            self.new_session_image_counter = self.new_session_image_counter - \
+            # self.new_session_image_counter = self.new_session_image_counter - \
+            self.temp_image_counter = self.temp_image_counter - \
                 self.recount_images(self.new_folders_list[item])
 
             del(self.new_folders_list[item])
             self.new_session_info(len(self.new_folders_list),
-                                  self.new_session_image_counter)
+                                  self.temp_image_counter)
 
         if not self.new_folders_list:
             self.remove_dir_button.config(state='disabled')
             self.remove_dir_label.config(state='disabled')
 
     # recursive function to return sub-folder structure in list form
-
     def recurs_folder_scan(self, pathlist):
         recurs_list = []
         for item in range(len(pathlist)):
@@ -1193,7 +1212,8 @@ class MainWindow:
             recurs_list.append(pathlist[item])
 
             # add images in folder to counter
-            self.new_session_image_counter += self.recount_images(
+            # self.new_session_image_counter += self.recount_images(
+            self.temp_image_counter += self.recount_images(
                 pathlist[item])
 
             sub_paths = [folder.path for folder in os.scandir(
@@ -1255,7 +1275,8 @@ class MainWindow:
             full_path = os.path.join(path, file_name)
             for string in self.file_types_list:
                 if (file_name[-4:] in string):
-                    self.new_session_image_counter += 1
+                    # self.new_session_image_counter += 1
+                    self.temp_image_counter += 1
                     counter += 1
 
         return counter
@@ -1295,7 +1316,9 @@ class MainWindow:
 
                 self.interval_warning_msg.set("")
                 if (int_minutes > 0 and int_seconds > 0) or (int_minutes > 0 and int_seconds == 0) or (int_minutes == 0 and int_seconds > 0):
-                    self.time_interval_list.append((int_minutes, int_seconds))
+                    # self.time_interval_list.append((int_minutes, int_seconds))
+                    self.temp_time_interval_list.append(
+                        (int_minutes, int_seconds))
                     interval = "  {} mins : {} secs".format(
                         int_minutes, int_seconds)
                     self.intervals_box.insert('end', interval)
@@ -1320,9 +1343,11 @@ class MainWindow:
             self.intervals_box.delete(item)
             self.intervals_box.insert(item-1, interval)
             # del and insert in list
-            self.time_interval_list.insert(
+            # self.time_interval_list.insert(
+            self.temp_time_interval_list.insert(
                 item-1, self.time_interval_list[item])
-            del(self.time_interval_list[item+1])
+            # del(self.time_interval_list[item+1])
+            del(self.temp_time_interval_list[item+1])
 
             self.intervals_box.activate(item-1)
             self.intervals_box.select_set(item-1)
@@ -1337,9 +1362,11 @@ class MainWindow:
             self.intervals_box.delete(item)
             self.intervals_box.insert(item+1, interval)
             # del and insert in list
-            self.time_interval_list.insert(
+            # self.time_interval_list.insert(
+            self.temp_time_interval_list.insert(
                 item, self.time_interval_list[item+1])
-            del(self.time_interval_list[item+2])
+            # del(self.time_interval_list[item+2])
+            del(self.temp_time_interval_list[item+2])
 
             self.intervals_box.activate(item+1)
             self.intervals_box.select_set(item+1)
@@ -1349,9 +1376,11 @@ class MainWindow:
 
         for item in reversed(items):
             self.intervals_box.delete(item)
-            del(self.time_interval_list[item])
+            # del(self.time_interval_list[item])
+            del(self.temp_time_interval_list[item])
 
-        if not self.time_interval_list:
+        # if not self.time_interval_list:
+        if not self.temp_time_interval_list:
             self.move_interval_up_btn.config(state='disabled')
             self.move_interval_down_btn.config(state='disabled')
             self.remove_interval_button.config(state='disabled')
@@ -1551,6 +1580,7 @@ class MainWindow:
         # # print(type(self.session_state_list))
         # for item in self.session_state_list:
         #     print(type(item))
+        self.temp_time_interval_list = self.session_state_list[5].copy()
 
         self.session_state_list.clear()
 
