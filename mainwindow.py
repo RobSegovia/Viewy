@@ -130,6 +130,7 @@ class MainWindow:
         self.session_state_list = []
         self.edit_session_path_list = []
         self.temp_edit_session_path_list = []
+        self.temp_edit_path_remove_list = []
 
         self.edit_session_clicked = False
 
@@ -1083,7 +1084,7 @@ class MainWindow:
             self.temp_edit_session_path_list.clear()
             self.new_session_image_counter = self.temp_image_counter
 
-        print("S edit session list", self.edit_session_path_list)
+        # print("S edit session list", self.edit_session_path_list)
 
         # print("curr interval", self.current_interval)
         # print("time_secs list", self.time_secs_interval_list)
@@ -1091,9 +1092,9 @@ class MainWindow:
 
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
-        print("curr interval", self.current_interval)
-        print("time_secs list", self.time_secs_interval_list)
-        print()
+        # print("curr interval", self.current_interval)
+        # print("time_secs list", self.time_secs_interval_list)
+        # print()
 
         self.restore_menu_items()
         # self.total_images = self.new_session_image_counter
@@ -1118,7 +1119,7 @@ class MainWindow:
 
             # self.timer_bar_frame_exists = True
             self.timer_bar_hidden = False
-            print(" first timer window created")
+            # print(" first timer window created")
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
 
@@ -1148,19 +1149,15 @@ class MainWindow:
         for item in self.temp_edit_session_path_list:
             self.edit_session_path_list.append(item)
 
-        print("edited_folders()", self.edit_session_path_list)
+        for item in self.temp_edit_path_remove_list:
+            self.recurs_removal(self.edit_session_path_list,
+                                item)  # str or []
+        self.temp_edit_path_remove_list.clear()
 
-        # # replace temp list with updated regular edit list
-        # self.temp_edit_session_path_list = self.edit_session_path_list.copy()
-
-        # # clear old version of edit list
-        # self.edit_session_path_list.clear()
-
-        # # add both sets of folders to regular edit list
-        # self.edit_session_path_list = self.temp_edit_session_path_list.copy()
-
-        # clear the list for next round of edits
-        # self.temp_edit_session_path_list.clear()
+        print("edited_folders()")
+        for item in self.edit_session_path_list:
+            print(item)
+            print()
 
         self.edit_start_button_clicked = False
 
@@ -1250,6 +1247,7 @@ class MainWindow:
     def remove_dir(self):
         items = self.dir_box.curselection()
 
+        # item = int
         for item in reversed(items):
             self.dir_box.delete(item)
 
@@ -1257,20 +1255,54 @@ class MainWindow:
             self.temp_image_counter = self.temp_image_counter - \
                 self.recount_images(self.new_folders_list[item])
 
-            del(self.new_folders_list[item])
-
-            # also del it from temp edit list
-            # print("PATH LIST", self.temp_edit_session_path_list)
-            # print("ITEM", item)
-            # self.temp_edit_session_path_list = self.edit_session_path_list.copy
-            # del(self.temp_edit_session_path_list[item])
+            # del from edit list
+            if len(self.temp_edit_session_path_list) > 0:
+                print("Attempt to run recurs del of TEMP edit path list")
+                self.recurs_removal(
+                    None,
+                    self.temp_edit_session_path_list,
+                    self.new_folders_list[item])  # passing actual item, str or []
+            else:
+                self.temp_edit_path_remove_list.append(
+                    self.new_folders_list[item])
+                print("Remove list appended ", self.temp_edit_path_remove_list)
 
             self.new_session_info(len(self.new_folders_list),
                                   self.temp_image_counter)
 
+            del(self.new_folders_list[item])
+
         if not self.new_folders_list:
             self.remove_dir_button.config(state='disabled')
             self.remove_dir_label.config(state='disabled')
+
+    """ 'item' can be an int or a str"""
+
+    def recurs_removal(self, list1, item):
+
+        # if list1 is None:
+        # elem = str or [], item = str or []
+        #     for elem in reversed(list2):
+        #         if type(elem) == str:
+        #             if elem == item:
+        #                 del(list2[list2.index(elem)])
+        #                 print("Deleted Item !")
+        #         else:
+        #             # recursively search new list
+        #             self.recurs_removal(None, elem, item)
+        # else:
+
+        for elem in reversed(list1):
+            if type(elem) == str:
+                if elem == item:
+                    del(list1[list1.index(item)])
+                    print("Deleted Item !")
+            else:
+                print("Searching recurs...")
+                # recursively search new list
+                self.recurs_removal(elem, item)
+
+        return 0
 
     # recursive function to return sub-folder structure in list form
     def recurs_folder_scan(self, pathlist):
@@ -1594,34 +1626,34 @@ class MainWindow:
                 title='Save Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
         except:
             print("Save cancelled")
+        else:
+            # Save state
+            self.session_state_list.append(
+                self.new_folders_list)  # folders for Edit Session
+            self.session_state_list.append(
+                self.filenames_list)  # image names for loading
+            self.session_state_list.append(self.temp_new_filenames_list)
+            self.session_state_list.append(self.total_images)
+            self.session_state_list.append(
+                self.new_session_image_counter)  # current image position
+            self.session_state_list.append(
+                self.time_interval_list)  # list of tuples
+            self.session_state_list.append(self.current_interval)  # int
+            self.session_state_list.append(self.current_interval_index)  # int
+            self.session_state_list.append(self.incl_subdirs_var.get())  # int
+            # list of folders for Edit Session
+            self.session_state_list.append(self.edit_session_path_list)
+            self.session_state_list.append(self.image_index)
+            print()
+            # print(type(self.session_state_list))
+            for item in self.session_state_list:
+                print(type(item))
+            # print("len - ", len(self.session_state_list))
 
-        # Save state
-        self.session_state_list.append(
-            self.new_folders_list)  # folders for Edit Session
-        self.session_state_list.append(
-            self.filenames_list)  # image names for loading
-        self.session_state_list.append(self.temp_new_filenames_list)
-        self.session_state_list.append(self.total_images)
-        self.session_state_list.append(
-            self.new_session_image_counter)  # current image position
-        self.session_state_list.append(
-            self.time_interval_list)  # list of tuples
-        self.session_state_list.append(self.current_interval)  # int
-        self.session_state_list.append(self.current_interval_index)  # int
-        self.session_state_list.append(self.incl_subdirs_var.get())  # int
-        # list of folders for Edit Session
-        self.session_state_list.append(self.edit_session_path_list)
-        self.session_state_list.append(self.image_index)
-        print()
-        # print(type(self.session_state_list))
-        for item in self.session_state_list:
-            print(type(item))
-        # print("len - ", len(self.session_state_list))
+            with open(file, 'wb') as pickle_file:
+                pickle.dump(self.session_state_list, pickle_file)
 
-        with open(file, 'wb') as pickle_file:
-            pickle.dump(self.session_state_list, pickle_file)
-
-        print("\t>>> Saved session!")
+            print("\t>>> Saved session!")
 
     def load_session(self):
         try:
@@ -1629,32 +1661,32 @@ class MainWindow:
                 title='Load Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
         except:
             print("Load cancelled")
+        else:
+            with open(file, 'rb') as pickle_file:
+                self.session_state_list = pickle.load(pickle_file)
 
-        with open(file, 'rb') as pickle_file:
-            self.session_state_list = pickle.load(pickle_file)
+            self.new_folders_list = self.session_state_list[0].copy()
+            self.filenames_list = self.session_state_list[1].copy()
+            self.temp_new_filenames_list = self.session_state_list[2].copy()
+            self.total_images = self.session_state_list[3]
+            self.new_session_image_counter = self.session_state_list[4]
+            self.time_interval_list = self.session_state_list[5].copy()
+            self.current_interval = self.session_state_list[6]
+            self.current_interval_index = self.session_state_list[7]
+            self.incl_subdirs_var.set(self.session_state_list[8])
+            self.edit_session_path_list = self.session_state_list[9].copy()
+            self.image_index = self.session_state_list[10]
+            # print()
+            # # print(type(self.session_state_list))
+            # for item in self.session_state_list:
+            #     print(type(item))
+            self.temp_time_interval_list = self.session_state_list[5].copy()
 
-        self.new_folders_list = self.session_state_list[0].copy()
-        self.filenames_list = self.session_state_list[1].copy()
-        self.temp_new_filenames_list = self.session_state_list[2].copy()
-        self.total_images = self.session_state_list[3]
-        self.new_session_image_counter = self.session_state_list[4]
-        self.time_interval_list = self.session_state_list[5].copy()
-        self.current_interval = self.session_state_list[6]
-        self.current_interval_index = self.session_state_list[7]
-        self.incl_subdirs_var.set(self.session_state_list[8])
-        self.edit_session_path_list = self.session_state_list[9].copy()
-        self.image_index = self.session_state_list[10]
-        # print()
-        # # print(type(self.session_state_list))
-        # for item in self.session_state_list:
-        #     print(type(item))
-        self.temp_time_interval_list = self.session_state_list[5].copy()
+            self.session_state_list.clear()
 
-        self.session_state_list.clear()
-
-        self.session_loaded = True
-        self.start_session()
-        self.session_loaded = False
+            self.session_loaded = True
+            self.start_session()
+            self.session_loaded = False
 
         print("\t>>> Load successful !")
 
