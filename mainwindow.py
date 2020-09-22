@@ -124,6 +124,7 @@ class MainWindow:
         self.first_session_run = False
         self.exited_load_imgdir = False
         self.start_clicked = False
+        self.edit_start_button_clicked = False
 
         # TODO use to save state of session
         self.session_state_list = []
@@ -763,6 +764,11 @@ class MainWindow:
 
         self.new_session_win_exists = True
 
+        # if self.edit_session_clicked and len(self.edit_session_path_list) > 0:
+        #     self.temp_edit_session_path_list = self.edit_session_path_list.copy()
+        #     # clear regular edit list
+        # self.edit_session_path_list.clear()
+
         if not self.edit_session_clicked:
             self.new_session_info(0, 0)  # exclusive to session window
             self.incl_subdirs_var.set(0)  # exclusive to session window
@@ -784,6 +790,7 @@ class MainWindow:
         # self.new_session_win.attributes('-topmost', 'true')
         # removes move/close functionality
         # self.new_session_win.overrideredirect(True)
+        self.new_session_win.protocol("WM_DELETE_WINDOW", self.canceled)
 
         self.new_session_win.grid_rowconfigure(0, weight=10)
         self.new_session_win.grid_rowconfigure(1, weight=10)
@@ -963,30 +970,44 @@ class MainWindow:
             command=self.start_session)
         self.start_button.grid(row=1, column=1)
 
+        self.edit_start_button = tkinter.Button(
+            bottom_right_frame,
+            text="Edit Start",
+            bd=4,
+            padx=30,
+            pady=20,
+            state='normal',
+            command=self.edit_start)
+        self.edit_start_button.grid(row=1, column=1)
+        self.edit_start_button.grid_forget()
+
         self.new_session_info_msg.set(
             "Folders without images will be filtered out")
         bottom_frame = tkinter.Label(
             self.new_session_win, textvariable=self.new_session_info_msg)
         bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
 
-        # # reset list so it can be repopulated below
-        # # self.time_interval_list.clear()
-
-        # # update which info message
-        # self.new_session_info(len(self.new_folders_list),
-        #                       self.new_session_image_counter)
-
-        # elif self.start_clicked:
-        # print("paths cleared")
-        # self.edit_session_path_list.clear()
-        # self.temp_edit_session_path_list.clear()
-
         self.start_clicked = False
+
+    def canceled(self):
+        # clears the temporary folders that were added
+        self.temp_edit_session_path_list.clear()
+
+        self.new_session_win.destroy()
+        print("\tWINDOW CANCELED")
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
+        # makes sure Edit Start version of button appears insidd new_session()
         self.edit_session_clicked = True
         self.new_session()
+
+        # copy Edit path list into temp version
+        # self.edit_session_path_list = self.temp_edit_session_path_list.copy()
+
+        # hide start button and show edit start button
+        self.start_button.grid_forget()
+        self.edit_start_button.grid(row=1, column=1)
 
         self.new_session_win.title('Edit current Session')
         self.remove_dir_button.config(state='normal')
@@ -998,21 +1019,24 @@ class MainWindow:
         self.remove_interval_label.config(state='normal')
         self.start_button.config(state='normal')
 
+        # self.populate_dir_box(self.edit_session_path_list)
+        # if len(self.edit_session_path_list) > 0:
+        #     self.populate_dir_box(self.edit_session_path_list)
+        #     print("Used EDIT to pop")
+        # else:
+        #     self.populate_dir_box(self.temp_edit_session_path_list)
+        #     print("Used TEMP to pop")
+
         self.populate_dir_box(self.edit_session_path_list)
 
-        # reset list so it can be repopulated below
-        # self.time_interval_list.clear()
-
         for item in self.time_interval_list:
-            print("intr box populated")
-
             interval = "  {} mins : {} secs".format(item[0], item[1])
             self.intervals_box.insert('end', interval)
 
         # temp time interval normally gets populated when new intervals are added
         # but stm it's empty, so must copy existing intervals otherwise
         # interval list will be empty when press start
-        self.temp_time_interval_list = self.time_interval_list.copy()
+        # self.temp_time_interval_list = self.time_interval_list.copy()
 
         # update which info message
         self.new_session_info(len(self.new_folders_list),
@@ -1021,8 +1045,9 @@ class MainWindow:
         self.edit_session_clicked = False
         print()
 
+    """ only runs when Start clicked or session is loaded """
+
     def start_session(self):
-        self.start_clicked = True
 
         self.file_menu.entryconfig("Edit Session", state='normal')
         self.file_menu.entryconfig("Save Session", state='normal')
@@ -1037,32 +1062,43 @@ class MainWindow:
         self.temp_new_filenames_list.clear()
 
         if not self.session_loaded:
-            self.new_session_image_counter = self.temp_image_counter
-            self.time_interval_list = self.temp_time_interval_list.copy()
-
-            # self.
+            # print("time interval list", self.time_interval_list)
+            self.start_clicked = True
 
             self.image_index = 0
-            self.current_interval_index = 0
-            print('S edit sess', self.edit_session_path_list)
+            # print('S edit sess', self.edit_session_path_list)
 
-            for item in self.temp_edit_session_path_list:
-                self.edit_session_path_list.append(item)
-            self.temp_edit_session_path_list = self.edit_session_path_list.copy()
+            # EDIT button clicked
+            if self.edit_start_button_clicked:
+                self.edited_folders()
+                self.time_interval_list = self.temp_time_interval_list.copy()
 
-            self.edit_session_path_list.clear()
-            self.edit_session_path_list = self.temp_edit_session_path_list.copy()
+            else:
+                self.current_interval_index = 0
+                self.time_interval_list = self.temp_time_interval_list.copy()
+
+                # copy folders into edit to start the new session
+                self.edit_session_path_list = self.temp_edit_session_path_list.copy()
+
             self.temp_edit_session_path_list.clear()
+            self.new_session_image_counter = self.temp_image_counter
 
         print("S edit session list", self.edit_session_path_list)
 
+        # print("curr interval", self.current_interval)
+        # print("time_secs list", self.time_secs_interval_list)
+        # print()
+
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
+        print("curr interval", self.current_interval)
+        print("time_secs list", self.time_secs_interval_list)
+        print()
 
         self.restore_menu_items()
-        self.image_exists = True
         # self.total_images = self.new_session_image_counter
         self.total_images = self.new_session_image_counter
+        self.image_exists = True
         self.load()
 
         # set the first interval
@@ -1102,6 +1138,31 @@ class MainWindow:
         self.timer_bar_frame.pack(side='bottom')
         # reset bar progress
         self.timer_canvas.coords('timer_bar', 0, 0, 0, 12)
+
+    def edit_start(self):
+        self.edit_start_button_clicked = True
+        self.start_session()
+
+    def edited_folders(self):
+        # add each new folder from temp list to regular list
+        for item in self.temp_edit_session_path_list:
+            self.edit_session_path_list.append(item)
+
+        print("edited_folders()", self.edit_session_path_list)
+
+        # # replace temp list with updated regular edit list
+        # self.temp_edit_session_path_list = self.edit_session_path_list.copy()
+
+        # # clear old version of edit list
+        # self.edit_session_path_list.clear()
+
+        # # add both sets of folders to regular edit list
+        # self.edit_session_path_list = self.temp_edit_session_path_list.copy()
+
+        # clear the list for next round of edits
+        # self.temp_edit_session_path_list.clear()
+
+        self.edit_start_button_clicked = False
 
     def hide_show_timer_bar(self):
         if self.timer_bar_hidden:
@@ -1148,7 +1209,7 @@ class MainWindow:
                     for item in self.temp_list:
                         self.temp_edit_session_path_list.append(item)
                     # print(self.temp_list)
-                    print(self.edit_session_path_list)
+                    # print(self.edit_session_path_list)
 
             except PermissionError:
                 raise
@@ -1197,6 +1258,13 @@ class MainWindow:
                 self.recount_images(self.new_folders_list[item])
 
             del(self.new_folders_list[item])
+
+            # also del it from temp edit list
+            # print("PATH LIST", self.temp_edit_session_path_list)
+            # print("ITEM", item)
+            # self.temp_edit_session_path_list = self.edit_session_path_list.copy
+            # del(self.temp_edit_session_path_list[item])
+
             self.new_session_info(len(self.new_folders_list),
                                   self.temp_image_counter)
 
