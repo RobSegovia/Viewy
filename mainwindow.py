@@ -993,6 +993,10 @@ class MainWindow:
     def canceled(self):
         # clears the temporary folders that were added
         self.temp_edit_session_path_list.clear()
+        # clears temp folders that were removed
+        self.temp_edit_path_remove_list.clear()
+
+        self.temp_image_counter = 0
 
         self.new_session_win.destroy()
         print("\tWINDOW CANCELED")
@@ -1002,9 +1006,6 @@ class MainWindow:
         # makes sure Edit Start version of button appears insidd new_session()
         self.edit_session_clicked = True
         self.new_session()
-
-        # copy Edit path list into temp version
-        # self.edit_session_path_list = self.temp_edit_session_path_list.copy()
 
         # hide start button and show edit start button
         self.start_button.grid_forget()
@@ -1020,28 +1021,17 @@ class MainWindow:
         self.remove_interval_label.config(state='normal')
         self.start_button.config(state='normal')
 
-        # self.populate_dir_box(self.edit_session_path_list)
-        # if len(self.edit_session_path_list) > 0:
-        #     self.populate_dir_box(self.edit_session_path_list)
-        #     print("Used EDIT to pop")
-        # else:
-        #     self.populate_dir_box(self.temp_edit_session_path_list)
-        #     print("Used TEMP to pop")
-
         self.populate_dir_box(self.edit_session_path_list)
 
         for item in self.time_interval_list:
             interval = "  {} mins : {} secs".format(item[0], item[1])
             self.intervals_box.insert('end', interval)
 
-        # temp time interval normally gets populated when new intervals are added
-        # but stm it's empty, so must copy existing intervals otherwise
-        # interval list will be empty when press start
-        # self.temp_time_interval_list = self.time_interval_list.copy()
-
         # update which info message
         self.new_session_info(len(self.new_folders_list),
                               self.new_session_image_counter)
+
+        self.temp_image_counter = self.new_session_image_counter
 
         self.edit_session_clicked = False
         print()
@@ -1071,6 +1061,7 @@ class MainWindow:
 
             # EDIT button clicked
             if self.edit_start_button_clicked:
+
                 self.edited_folders()
                 self.time_interval_list = self.temp_time_interval_list.copy()
 
@@ -1083,12 +1074,6 @@ class MainWindow:
 
             self.temp_edit_session_path_list.clear()
             self.new_session_image_counter = self.temp_image_counter
-
-        # print("S edit session list", self.edit_session_path_list)
-
-        # print("curr interval", self.current_interval)
-        # print("time_secs list", self.time_secs_interval_list)
-        # print()
 
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
@@ -1152,12 +1137,16 @@ class MainWindow:
         for item in self.temp_edit_path_remove_list:
             self.recurs_removal(self.edit_session_path_list,
                                 item)  # str or []
-        self.temp_edit_path_remove_list.clear()
 
-        print("edited_folders()")
-        for item in self.edit_session_path_list:
-            print(item)
-            print()
+        # print("edited_folders()")
+        # for item in self.edit_session_path_list:
+        #     print(item)
+        #     print()
+
+        # TODO   - fix image counter after removing dirs
+        #       - make program blank if all folders removed or disable Start key
+
+        self.temp_edit_path_remove_list.clear()
 
         self.edit_start_button_clicked = False
 
@@ -1170,7 +1159,7 @@ class MainWindow:
             self.timer_bar_hidden = True
 
     def add_dir(self):
-
+        print("ADD DIR temp image counter:", self.temp_image_counter)
         if self.incl_subdirs_var.get() == 1:
 
             try:
@@ -1205,6 +1194,12 @@ class MainWindow:
                     # self.edit_session_path_list[0].append(self.temp_list)
                     for item in self.temp_list:
                         self.temp_edit_session_path_list.append(item)
+
+                        # remove folder from temp del list
+                        if item in self.temp_edit_path_remove_list:
+                            del(self.temp_edit_path_remove_list[self.temp_edit_path_remove_list.index(
+                                item)])
+
                     # print(self.temp_list)
                     # print(self.edit_session_path_list)
 
@@ -1226,6 +1221,11 @@ class MainWindow:
                     self.new_folders_list.append(path)
                     self.dir_box.insert(tkinter.END, path)
 
+                    # remove folder from temp del list
+                    if path in self.temp_edit_path_remove_list:
+                        del(self.temp_edit_path_remove_list[self.temp_edit_path_remove_list.index(
+                            path)])
+
                     # backup copy for EDIT session
                     self.temp_edit_session_path_list.append(path)
                     # print(self.edit_session_path_list)
@@ -1242,55 +1242,51 @@ class MainWindow:
 
         self.new_session_info(len(self.new_folders_list),
                               self.temp_image_counter)
-        #   self.new_session_image_counter)
+
+        if self.temp_time_interval_list:
+            self.start_button.config(state='normal')
+            self.edit_start_button.config(state='normal')
 
     def remove_dir(self):
         items = self.dir_box.curselection()
-
+        print("REM DIR temp image counter:", self.temp_image_counter)
         # item = int
         for item in reversed(items):
             self.dir_box.delete(item)
-
-            # self.new_session_image_counter = self.new_session_image_counter - \
-            self.temp_image_counter = self.temp_image_counter - \
-                self.recount_images(self.new_folders_list[item])
+            self.temp_image_counter -= self.recount_images(
+                self.new_folders_list[item])
 
             # del from edit list
             if len(self.temp_edit_session_path_list) > 0:
+                print()
+                print(self.temp_edit_session_path_list)
                 print("Attempt to run recurs del of TEMP edit path list")
                 self.recurs_removal(
-                    None,
+                    # None,
                     self.temp_edit_session_path_list,
                     self.new_folders_list[item])  # passing actual item, str or []
             else:
-                self.temp_edit_path_remove_list.append(
-                    self.new_folders_list[item])
+                if self.new_folders_list[item] not in self.temp_edit_path_remove_list:
+                    self.temp_edit_path_remove_list.append(
+                        self.new_folders_list[item])
                 print("Remove list appended ", self.temp_edit_path_remove_list)
 
-            self.new_session_info(len(self.new_folders_list),
-                                  self.temp_image_counter)
-
             del(self.new_folders_list[item])
+
+        self.new_session_info(len(self.new_folders_list),
+                              self.temp_image_counter)
 
         if not self.new_folders_list:
             self.remove_dir_button.config(state='disabled')
             self.remove_dir_label.config(state='disabled')
+            self.start_button.config(state='disabled')
+            self.edit_start_button.config(state='disabled')
 
-    """ 'item' can be an int or a str"""
+    """ 
+    'item' can be an int or a str
+    """
 
     def recurs_removal(self, list1, item):
-
-        # if list1 is None:
-        # elem = str or [], item = str or []
-        #     for elem in reversed(list2):
-        #         if type(elem) == str:
-        #             if elem == item:
-        #                 del(list2[list2.index(elem)])
-        #                 print("Deleted Item !")
-        #         else:
-        #             # recursively search new list
-        #             self.recurs_removal(None, elem, item)
-        # else:
 
         for elem in reversed(list1):
             if type(elem) == str:
@@ -1312,7 +1308,6 @@ class MainWindow:
             recurs_list.append(pathlist[item])
 
             # add images in folder to counter
-            # self.new_session_image_counter += self.recount_images(
             self.temp_image_counter += self.recount_images(
                 pathlist[item])
 
@@ -1428,6 +1423,7 @@ class MainWindow:
                     self.remove_interval_label.config(state='normal')
                     if self.new_folders_list:
                         self.start_button.config(state='normal')
+                        self.edit_start_button.config(state='normal')
 
                 self.reset_spinboxes()
 
@@ -1649,9 +1645,11 @@ class MainWindow:
             for item in self.session_state_list:
                 print(type(item))
             # print("len - ", len(self.session_state_list))
-
-            with open(file, 'wb') as pickle_file:
-                pickle.dump(self.session_state_list, pickle_file)
+            try:
+                with open(file, 'wb') as pickle_file:
+                    pickle.dump(self.session_state_list, pickle_file)
+            except FileNotFoundError:
+                print("No file to save")
 
             print("\t>>> Saved session!")
 
@@ -1662,33 +1660,38 @@ class MainWindow:
         except:
             print("Load cancelled")
         else:
-            with open(file, 'rb') as pickle_file:
-                self.session_state_list = pickle.load(pickle_file)
+            try:
+                with open(file, 'rb') as pickle_file:
+                    self.session_state_list = pickle.load(pickle_file)
 
-            self.new_folders_list = self.session_state_list[0].copy()
-            self.filenames_list = self.session_state_list[1].copy()
-            self.temp_new_filenames_list = self.session_state_list[2].copy()
-            self.total_images = self.session_state_list[3]
-            self.new_session_image_counter = self.session_state_list[4]
-            self.time_interval_list = self.session_state_list[5].copy()
-            self.current_interval = self.session_state_list[6]
-            self.current_interval_index = self.session_state_list[7]
-            self.incl_subdirs_var.set(self.session_state_list[8])
-            self.edit_session_path_list = self.session_state_list[9].copy()
-            self.image_index = self.session_state_list[10]
-            # print()
-            # # print(type(self.session_state_list))
-            # for item in self.session_state_list:
-            #     print(type(item))
-            self.temp_time_interval_list = self.session_state_list[5].copy()
+                self.new_folders_list = self.session_state_list[0].copy()
+                self.filenames_list = self.session_state_list[1].copy()
+                self.temp_new_filenames_list = self.session_state_list[2].copy(
+                )
+                self.total_images = self.session_state_list[3]
+                self.new_session_image_counter = self.session_state_list[4]
+                self.time_interval_list = self.session_state_list[5].copy()
+                self.current_interval = self.session_state_list[6]
+                self.current_interval_index = self.session_state_list[7]
+                self.incl_subdirs_var.set(self.session_state_list[8])
+                self.edit_session_path_list = self.session_state_list[9].copy()
+                self.image_index = self.session_state_list[10]
+                # print()
+                # # print(type(self.session_state_list))
+                # for item in self.session_state_list:
+                #     print(type(item))
+                self.temp_time_interval_list = self.session_state_list[5].copy(
+                )
 
-            self.session_state_list.clear()
+                self.session_state_list.clear()
 
-            self.session_loaded = True
-            self.start_session()
-            self.session_loaded = False
-
-        print("\t>>> Load successful !")
+                self.session_loaded = True
+                self.start_session()
+                self.session_loaded = False
+            except FileNotFoundError:
+                print("File not found")
+            else:
+                print("\t>>> Load successful !")
 
     def zoom(self, event):
         if event.delta > 0:
