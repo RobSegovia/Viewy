@@ -1138,14 +1138,6 @@ class MainWindow:
             self.recurs_removal(self.edit_session_path_list,
                                 item)  # str or []
 
-        # print("edited_folders()")
-        # for item in self.edit_session_path_list:
-        #     print(item)
-        #     print()
-
-        # TODO   - fix image counter after removing dirs
-        #       - make program blank if all folders removed or disable Start key
-
         self.temp_edit_path_remove_list.clear()
 
         self.edit_start_button_clicked = False
@@ -1815,14 +1807,16 @@ class MainWindow:
         size_box.grid(row=4, column=3, sticky='w')
 
     def open_folder(self):
-        # print("image path", self.image_path.get())
+        # opens just the folder in Win 10
         # folder_path = os.path.split(os.path.abspath(self.image_path.get()))
         # os.startfile(folder_path[0])
 
-        subprocess.Popen('explorer /select,{}'.format(self.image_path.get().replace('/','\\')))
-
-        # print("folder path:", folder_path)
+        # alternate way of opening the folder w/o selection
         # webbrowser.open('file:///' + folder_path[0])
+
+        # opens win explorer and selects file, works in Windows 10
+        subprocess.Popen(
+            'explorer /select,{}'.format(self.image_path.get().replace('/', '\\')))
 
     def next_image_func(self):
         self.canvas.event_generate('<Key>', keysym='Right', when='tail')
@@ -2231,7 +2225,36 @@ class MainWindow:
         pass
 
     def about(self):
-        pass
+        self.win_location()
+        about_window = tkinter.Toplevel()
+        about_window.title("About Viewy")
+        about_window.resizable(False, False)
+        about_window.geometry("{}x{}+{}+{}".format(250, 150,
+                                                   self.win_x_offset+80, self.win_y_offset+100))
+
+        about_window.grid_rowconfigure(0, weight=5)
+        about_window.grid_rowconfigure(1, weight=1)
+        about_window.grid_rowconfigure(2, weight=1)
+        about_window.grid_rowconfigure(3, weight=1)
+        about_window.grid_rowconfigure(4, weight=4)
+        about_window.grid_rowconfigure(5, weight=1)
+        about_window.grid_rowconfigure(6, weight=5)
+        about_window.grid_columnconfigure(0, weight=1)
+        about_window.grid_columnconfigure(1, weight=1)
+        about_window.grid_columnconfigure(2, weight=1)
+
+        title = tkinter.Label(
+            about_window, text="Viewy 1.0", font=("Verdana", 12, 'bold'))
+        title.grid(row=1, column=1)
+        copyright_ = tkinter.Label(
+            about_window, text="Copyright © 2020")
+        copyright_.grid(row=2, column=1)
+        author = tkinter.Label(
+            about_window, text="Robert L. Segovia", font=('Helvetica', 11))
+        author.grid(row=3, column=1, sticky='n')
+        close = tkinter.Button(about_window, text="Close",
+                               command=about_window.destroy)
+        close.grid(row=5, column=1, sticky='s')
 
     def win_dimensions(self):
         self.win_width = mainWindow.winfo_width()
