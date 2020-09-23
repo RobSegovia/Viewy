@@ -740,7 +740,7 @@ class MainWindow:
         self.menubar.entryconfig("Timed Session", state='disabled')
 
     def set_path(self):
-        # self.image_path.set(self.filenames_list[self.image_index])
+        self.image_path.set(self.filenames_list[self.image_index])
         path = os.path.split(os.path.abspath(
             self.filenames_list[self.image_index]))
         self.image_name.set(path[1])
@@ -1815,8 +1815,14 @@ class MainWindow:
         size_box.grid(row=4, column=3, sticky='w')
 
     def open_folder(self):
-        folder_path = os.path.split(os.path.abspath(self.image_path.get()))
-        os.startfile(folder_path[0])
+        # print("image path", self.image_path.get())
+        # folder_path = os.path.split(os.path.abspath(self.image_path.get()))
+        # os.startfile(folder_path[0])
+
+        subprocess.Popen('explorer /select,{}'.format(self.image_path.get().replace('/','\\')))
+
+        # print("folder path:", folder_path)
+        # webbrowser.open('file:///' + folder_path[0])
 
     def next_image_func(self):
         self.canvas.event_generate('<Key>', keysym='Right', when='tail')
