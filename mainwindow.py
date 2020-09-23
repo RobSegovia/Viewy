@@ -18,37 +18,7 @@ import pickle
 
 class MainWindow:
 
-    menubar = None
-    file_menu = None
-    view_menu = None
-    image_menu = None
-    window_menu = None
-    help_menu = None
-
-    menubar_sel = None
-    submenu_sel = None
-
-    image_frame = None
-    image_label = None
-    cv2_image = None
-    pil_image = None
-    tk_image = None
-
-    screen_width = 0
-    screen_height = 0
-    win_width = 640
-    win_height = 480
-    win_x_offset = 3000
-    win_y_offset = 100
-    image_width = 0
-    image_height = 0
-
-    SBW = 21  # scrollbar width
-
-    image_scrollbar = None
-
     def __init__(self, mainWindow):
-        # self.exit_threads = threading.Event()
 
         self.screen_width = mainWindow.winfo_screenwidth()
         self.screen_height = mainWindow.winfo_screenheight()
@@ -59,6 +29,34 @@ class MainWindow:
         self.info_text = tkinter.StringVar()
         self.zoom_text = tkinter.StringVar()
         self.zoom_value = 100
+
+        self.menubar = None
+        self.file_menu = None
+        self.view_menu = None
+        self.image_menu = None
+        self.window_menu = None
+        self.help_menu = None
+
+        self.menubar_sel = None
+        self.submenu_sel = None
+
+        self.image_frame = None
+        self.image_label = None
+        self.cv2_image = None
+        self.pil_image = None
+        self.tk_image = None
+
+        self.screen_width = 0
+        self.screen_height = 0
+        self.win_width = 640
+        self.win_height = 480
+        self.win_x_offset = 3000
+        self.win_y_offset = 100
+        self.image_width = 0
+        self.image_height = 0
+
+        self.SBW = 21  # scrollbar width
+        self.image_scrollbar = None
 
         self.image_index = None
         self.filenames_string = None
@@ -298,15 +296,18 @@ class MainWindow:
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=mainWindow.quit)
 
-        self.view_menu.add_command(label="Zoom In", command=self.zoom_in)
-        self.view_menu.add_command(label="Zoom Out", command=self.zoom_out)
+        self.view_menu.add_command(
+            label="Zoom In", command=self.zoom_in, accelerator='Scroll ↑')
+        self.view_menu.add_command(
+            label="Zoom Out", command=self.zoom_out, accelerator='Scroll ↓')
         self.view_menu.add_checkbutton(
             label="Zoom to Window Width", variable=self.zoom_width_var, command=self.zoom_to_width)
         self.view_menu.add_checkbutton(
             label="Zoom to Window Height", variable=self.zoom_height_var, command=self.zoom_to_height)
         self.view_menu.add_checkbutton(
             label="Auto Zoom to Fit Window", variable=self.zoom_auto_var, command=self.zoom_auto)
-        self.view_menu.add_command(label="Reset Zoom", command=self.zoom_reset)
+        self.view_menu.add_command(
+            label="Reset Zoom", command=self.zoom_reset, accelerator='R')
         self.view_menu.add_separator()
         self.view_menu.add_command(
             label="Flip Vertical", command=self.flip_vert)
@@ -320,35 +321,37 @@ class MainWindow:
         self.view_menu.add_command(label="Image Info", command=self.image_info)
 
         self.image_menu.add_command(
-            label="Next Image", command=self.next_image_func)
+            label="Next Image", command=self.next_image_func, accelerator='→')
         self.image_menu.add_command(
-            label="Previous Image", command=self.prev_image_func)
+            label="Previous Image", command=self.prev_image_func, accelerator='←')
         self.image_menu.add_separator()
         self.image_menu.add_command(
             label="Search Image on Google", command=self.search_google)
         self.image_menu.add_separator()
         self.image_menu.add_command(
-            label="Vignette Border", command=self.vignette)
-        self.image_menu.add_command(label="Brighten", command=self.brighten)
-        self.image_menu.add_command(label="Darken", command=self.darken)
+            label="Vignette Border", command=self.vignette, accelerator='V')
         self.image_menu.add_command(
-            label="Levels - Brighten", command=self.levels_brighten)
+            label="Brighten", command=self.brighten, accelerator='B')
         self.image_menu.add_command(
-            label="Levels - Darken", command=self.levels_darken)
+            label="Darken", command=self.darken, accelerator='D')
+        self.image_menu.add_command(
+            label="Levels - Brighten", command=self.levels_brighten, accelerator='G')
+        self.image_menu.add_command(
+            label="Levels - Darken", command=self.levels_darken, accelerator='F')
         self.image_menu.add_command(label="Median", command=self.median)
         self.image_menu.add_separator()
         self.image_menu.add_checkbutton(
             label="Random Order of Images", variable=self.random_on, command=self.randomizer)
 
         self.timed_menu.add_command(
-            label="Pause/Continue", command=self.pause)
+            label="Pause/Continue", command=self.pause, accelerator='Space')
         self.timed_menu.add_command(
-            label="Next Timed Interval", command=self.next_interval)
+            label="Next Timed Interval", command=self.next_interval, accelerator='S')
         self.timed_menu.add_command(
-            label="Previous Timed Interval", command=self.prev_interval)
+            label="Previous Timed Interval", command=self.prev_interval, accelerator='A')
         self.timed_menu.add_separator()
         self.timed_menu.add_command(
-            label="Hide/Show Timer Bar", command=self.hide_show_timer_bar)
+            label="Hide/Show Timer Bar", command=self.hide_show_timer_bar, accelerator='H')
 
         self.window_menu.add_command(label="Minimize", command=self.min_window)
         self.window_menu.add_command(
@@ -947,7 +950,6 @@ class MainWindow:
         self.temp_image_counter = 0
         self.new_session_win.destroy()
 
-
     def edit_session(self):
         # same as new session with current directories pre-loaded
         # makes sure Edit Start version of button appears inside new_session()
@@ -984,6 +986,7 @@ class MainWindow:
         print()
 
     """ only runs when Start clicked or session is loaded """
+
     def start_session(self):
 
         self.file_menu.entryconfig("Edit Session", state='normal')
@@ -1574,7 +1577,8 @@ class MainWindow:
 
                 self.new_folders_list = self.session_state_list[0].copy()
                 self.filenames_list = self.session_state_list[1].copy()
-                self.temp_new_filenames_list = self.session_state_list[2].copy()
+                self.temp_new_filenames_list = self.session_state_list[2].copy(
+                )
                 self.total_images = self.session_state_list[3]
                 self.new_session_image_counter = self.session_state_list[4]
                 self.time_interval_list = self.session_state_list[5].copy()
@@ -1584,7 +1588,8 @@ class MainWindow:
                 self.edit_session_path_list = self.session_state_list[9].copy()
                 self.image_index = self.session_state_list[10]
 
-                self.temp_time_interval_list = self.session_state_list[5].copy()
+                self.temp_time_interval_list = self.session_state_list[5].copy(
+                )
 
                 self.session_state_list.clear()
 
