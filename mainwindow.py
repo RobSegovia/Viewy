@@ -8,15 +8,12 @@ import PIL.ImageTk
 import numpy
 import cv2
 import os
-import psutil
 import random
 import requests
 import webbrowser
 import subprocess
-import threading
 import time
 import pickle
-# TODO move non-interface commands to separate module. ex: resize image, levels, etc
 
 
 class MainWindow:
@@ -126,7 +123,6 @@ class MainWindow:
         self.start_clicked = False
         self.edit_start_button_clicked = False
 
-        # TODO use to save state of session
         self.session_state_list = []
         self.edit_session_path_list = []
         self.temp_edit_session_path_list = []
@@ -134,16 +130,8 @@ class MainWindow:
 
         self.edit_session_clicked = False
 
-        # self.timer_x0 = 0
-        # self.timer_x1 = 0
-        # self.timer_y0 = 0
-        # self.timer_y1 = 0
-        # self.rect_x1 = 0
         self.TIMER_BAR_WIDTH = 250
         self.TIMER_BAR_HEIGHT = 12
-        # self.TIMER_WIN_X = 250
-        # self.TIMER_WIN_Y = 12
-        # self.progress_value = 0
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -181,15 +169,10 @@ class MainWindow:
         self.vert_scrollbar = tkinter.Scrollbar(
             self.image_frame)
         self.vert_scrollbar.config(command=self.canvas.yview)
-        # self.vert_scrollbar.pack(side=tkinter.RIGHT,
-        #                          fill='y')
-        # self.vert_scrollbar.pack_forget()
 
         self.horz_scrollbar = tkinter.Scrollbar(
             self.image_frame, orient=tkinter.HORIZONTAL)
         self.horz_scrollbar.config(command=self.canvas.xview)
-        # self.horz_scrollbar.pack(side=tkinter.BOTTOM, fill='x')
-        # self.horz_scrollbar.pack_forget()
 
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
         self.canvas.config(
@@ -344,8 +327,6 @@ class MainWindow:
         self.image_menu.add_command(
             label="Search Image on Google", command=self.search_google)
         self.image_menu.add_separator()
-        # self.image_menu.add_command(
-        #     label="Resize Image", command=self.resize_image)
         self.image_menu.add_command(
             label="Vignette Border", command=self.vignette)
         self.image_menu.add_command(label="Brighten", command=self.brighten)
@@ -395,7 +376,7 @@ class MainWindow:
         mainWindow.config(menu=self.menubar)
 
         # Status bar at bottom of screen
-        # Using anchor= instead of justify= because justify on ly works for multiline
+        # Using anchor= instead of justify= because justify only works for multiline
         self.status_bar = tkinter.Label(
             relief=tkinter.SUNKEN, anchor='w', textvariable=self.status_text)
         self.status_bar.pack(side='left', fill='x', expand=True)
@@ -440,7 +421,6 @@ class MainWindow:
         self.load_dir_var.set(1)
         self.load()
 
-    # TODO: requires refactoring !!!!!!!
     def load(self, event=None):
 
         # poll window location before refreshing
@@ -506,7 +486,7 @@ class MainWindow:
                     # for every extension type in the reference list
                     for string in self.file_types_list:
                         # if the extension exists in the element
-                        if (file_name[-4:] in string):
+                        if file_name[-4:] in string:
                             # then add it to the list
                             self.new_filenames_list.append(full_path)
                     # NOTE: list comprehension version; for loop is more readable in this case
@@ -520,10 +500,8 @@ class MainWindow:
                 self.image_index = 0
 
             except FileNotFoundError:
-                # raise
                 self.status_text.set(" Action canceled - No directory loaded")
             except IndexError:
-                # raise
                 self.status_text.set(" No files to load")
             except AssertionError:
                 self.status_text.set(" No valid files to load")
@@ -591,7 +569,6 @@ class MainWindow:
             except IndexError:
                 print(" No image to load")
             except:
-                raise
                 print("-> Image could not be loaded")
 
         # AUTO ZOOM is ON
@@ -622,11 +599,6 @@ class MainWindow:
                 self.image_dimensions(self.pil_image, 'pil_image')
                 self.set_path()
 
-                # print("Auto zoom is on:", self.zoom_auto_var.get())
-                # print("win size:", mainWindow.winfo_width(),
-                #       mainWindow.winfo_height())
-                # print("image size:", self.image_width, self.image_height)
-
                 w1 = mainWindow.winfo_width()
                 h1 = mainWindow.winfo_height()
                 w2 = self.image_width
@@ -637,10 +609,6 @@ class MainWindow:
 
                 win_ratio = w1 / h1
                 image_ratio = w2 / h2
-
-                # print("Min Max of window:", min_of_window, max_of_window)
-                # print("Win ratio:", win_ratio)
-                # print("Image ratio:", image_ratio)
 
                 # if ratios = same, resize both w and h to same size as window w and h
                 if win_ratio == 1 and image_ratio == 1:
@@ -685,16 +653,15 @@ class MainWindow:
                             min_of_window-10, int(min_of_window / image_ratio)-int(10/image_ratio))
                         print("3--3")
 
-                # TODO fix this case
                 # if win is vertical and image is horizontal
-                elif win_ratio <= 1 and image_ratio >= 1:
+                elif win_ratio <= 1 <= image_ratio:
                     # max of image ==> min of window
                     self.resize_image(min_of_window-10, int(
                         min_of_window / image_ratio)-int(10/image_ratio))
                     print("4-")
 
                 # if win is horizontal and image is verical
-                elif win_ratio >= 1 and image_ratio <= 1:
+                elif win_ratio >= 1 >= image_ratio:
                     # min of window ==> max of image
                     self.resize_image(
                         int(min_of_window * image_ratio)-int(21*image_ratio), min_of_window-21)
@@ -724,9 +691,6 @@ class MainWindow:
                 self.info_text.set("Image {} of {}  ".format(
                     self.image_index+1, self.total_images))
 
-        # print("image flip:", self.image_flip,
-        #       "image flipped:", self.image_flipped)
-
     def reset_from_session_mode(self):
         self.new_session_started = False
         self.exited_load_imgdir = True
@@ -745,13 +709,10 @@ class MainWindow:
             self.filenames_list[self.image_index]))
         self.image_name.set(path[1])
         self.image_folder.set(path[0])
-        # self.image_dimensions(self.tk_image, 'tk_image')
         self.image_size.set("{} x {} px".format(
             self.image_width, self.image_height))
-        # print("set_path: ", self.image_path.get())
 
     def restore_menu_items(self):
-        # self.file_menu.entryconfig(3, state='normal')
         self.menubar.entryconfig("View", state='normal')
         self.menubar.entryconfig("Image", state='normal')
         self.lock_aspect()
@@ -765,20 +726,13 @@ class MainWindow:
 
         self.new_session_win_exists = True
 
-        # if self.edit_session_clicked and len(self.edit_session_path_list) > 0:
-        #     self.temp_edit_session_path_list = self.edit_session_path_list.copy()
-        #     # clear regular edit list
-        # self.edit_session_path_list.clear()
-
         if not self.edit_session_clicked:
             self.new_session_info(0, 0)  # exclusive to session window
             self.incl_subdirs_var.set(0)  # exclusive to session window
 
-            # self.new_session_image_counter = 0  # causes empty image counter
             self.temp_image_counter = 0  # causes empty image counter
             self.temp_new_filenames_list.clear()  # causes empty dir_box ?
             self.temp_time_interval_list.clear()  # causes empty interval box
-            # self.time_interval_list.clear()  # causes empty interval box
 
         self.new_folders_list.clear()
 
@@ -788,9 +742,7 @@ class MainWindow:
         self.new_session_win.title('Start a New Session')
         self.new_session_win.geometry("{}x{}+{}+{}".format(440, 450,
                                                            self.win_x_offset+80, self.win_y_offset+80))
-        # self.new_session_win.attributes('-topmost', 'true')
-        # removes move/close functionality
-        # self.new_session_win.overrideredirect(True)
+
         self.new_session_win.protocol("WM_DELETE_WINDOW", self.canceled)
 
         self.new_session_win.grid_rowconfigure(0, weight=10)
@@ -876,10 +828,6 @@ class MainWindow:
         self.remove_dir_label = tkinter.Label(
             top_right_frame, text="Remove\nDirectory", anchor='w', justify='left', state='disabled')
         self.remove_dir_label.grid(row=7, column=2, sticky='w')
-
-        # mid_separator = tkinter.ttk.Separator(
-        #     , orient='horizontal')
-        # mid_separator.grid(row=7, column=2, sticky='we', columnspan=3)
 
         bottom_left_frame.grid_rowconfigure(0, weight=80)
         bottom_left_frame.grid_rowconfigure(1, weight=4)
@@ -997,13 +945,12 @@ class MainWindow:
         self.temp_edit_path_remove_list.clear()
 
         self.temp_image_counter = 0
-
         self.new_session_win.destroy()
-        print("\tWINDOW CANCELED")
+
 
     def edit_session(self):
         # same as new session with current directories pre-loaded
-        # makes sure Edit Start version of button appears insidd new_session()
+        # makes sure Edit Start version of button appears inside new_session()
         self.edit_session_clicked = True
         self.new_session()
 
@@ -1037,7 +984,6 @@ class MainWindow:
         print()
 
     """ only runs when Start clicked or session is loaded """
-
     def start_session(self):
 
         self.file_menu.entryconfig("Edit Session", state='normal')
@@ -1053,11 +999,9 @@ class MainWindow:
         self.temp_new_filenames_list.clear()
 
         if not self.session_loaded:
-            # print("time interval list", self.time_interval_list)
             self.start_clicked = True
 
             self.image_index = 0
-            # print('S edit sess', self.edit_session_path_list)
 
             # EDIT button clicked
             if self.edit_start_button_clicked:
@@ -1077,20 +1021,14 @@ class MainWindow:
 
         # convert intervals from mins:secs to all secs
         self.interval_in_seconds()
-        # print("curr interval", self.current_interval)
-        # print("time_secs list", self.time_secs_interval_list)
-        # print()
 
         self.restore_menu_items()
-        # self.total_images = self.new_session_image_counter
         self.total_images = self.new_session_image_counter
         self.image_exists = True
         self.load()
 
         # set the first interval
         self.current_interval = self.time_secs_interval_list[self.current_interval_index]
-        # print('START curr interval', self.current_interval)
-        # print('START list at 0', self.time_interval_list[0])
         self.time_diff = 0
 
         self.timer_activated = True
@@ -1101,10 +1039,7 @@ class MainWindow:
         # runs in case the previous mode used was not session mode
         if self.exited_load_imgdir:
             self.exited_load_imgdir = False
-
-            # self.timer_bar_frame_exists = True
             self.timer_bar_hidden = False
-            # print(" first timer window created")
 
         self.status_text.set("Press SPACEBAR to begin/pause timer")
 
@@ -1139,7 +1074,6 @@ class MainWindow:
                                 item)  # str or []
 
         self.temp_edit_path_remove_list.clear()
-
         self.edit_start_button_clicked = False
 
     def hide_show_timer_bar(self):
@@ -1151,7 +1085,6 @@ class MainWindow:
             self.timer_bar_hidden = True
 
     def add_dir(self):
-        print("ADD DIR temp image counter:", self.temp_image_counter)
         if self.incl_subdirs_var.get() == 1:
 
             try:
@@ -1160,8 +1093,7 @@ class MainWindow:
                 list_subd_paths = [
                     folder.path for folder in os.scandir(path) if folder.is_dir()]
 
-                all_folders_list = []
-                all_folders_list.append(path)
+                all_folders_list = [path]
                 empty_folder_list = []
 
                 # don't add list items if they're already in the list
@@ -1192,11 +1124,7 @@ class MainWindow:
                             del(self.temp_edit_path_remove_list[self.temp_edit_path_remove_list.index(
                                 item)])
 
-                    # print(self.temp_list)
-                    # print(self.edit_session_path_list)
-
             except PermissionError:
-                raise
                 print("- Permission Error")
             except FileNotFoundError:
                 print("- File not found")
@@ -1220,9 +1148,7 @@ class MainWindow:
 
                     # backup copy for EDIT session
                     self.temp_edit_session_path_list.append(path)
-                    # print(self.edit_session_path_list)
 
-                # self.new_session_image_counter += self.recount_images(path)
                 self.temp_image_counter += self.recount_images(path)
 
             except FileNotFoundError:
@@ -1241,8 +1167,7 @@ class MainWindow:
 
     def remove_dir(self):
         items = self.dir_box.curselection()
-        print("REM DIR temp image counter:", self.temp_image_counter)
-        # item = int
+
         for item in reversed(items):
             self.dir_box.delete(item)
             self.temp_image_counter -= self.recount_images(
@@ -1254,7 +1179,6 @@ class MainWindow:
                 print(self.temp_edit_session_path_list)
                 print("Attempt to run recurs del of TEMP edit path list")
                 self.recurs_removal(
-                    # None,
                     self.temp_edit_session_path_list,
                     self.new_folders_list[item])  # passing actual item, str or []
             else:
@@ -1312,7 +1236,6 @@ class MainWindow:
         return recurs_list
 
     def populate_dir_box(self, folderlist):
-        # print("\tPopulated dir_box !")
         for item in folderlist:
             if type(item) == str:
 
@@ -1321,7 +1244,6 @@ class MainWindow:
 
                     folder = " " * self.tabs + item
                     self.dir_box.insert(tkinter.END, folder)
-                    # print("\t\tItem inserted")
             else:
                 self.tabs += 4
                 self.populate_dir_box(item)
@@ -1348,7 +1270,7 @@ class MainWindow:
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
             for string in self.file_types_list:
-                if (file_name[-4:] in string):
+                if file_name[-4:] in string:
                     counter += 1
         if counter == 0:
             return False
@@ -1361,8 +1283,7 @@ class MainWindow:
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
             for string in self.file_types_list:
-                if (file_name[-4:] in string):
-                    # self.new_session_image_counter += 1
+                if file_name[-4:] in string:
                     self.temp_image_counter += 1
                     counter += 1
 
@@ -1373,7 +1294,7 @@ class MainWindow:
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
             for string in self.file_types_list:
-                if (file_name[-4:] in string):
+                if file_name[-4:] in string:
                     self.temp_new_filenames_list.append(full_path)
 
     def add_timed_interval(self):
@@ -1402,8 +1323,9 @@ class MainWindow:
             else:
 
                 self.interval_warning_msg.set("")
-                if (int_minutes > 0 and int_seconds > 0) or (int_minutes > 0 and int_seconds == 0) or (int_minutes == 0 and int_seconds > 0):
-                    # self.time_interval_list.append((int_minutes, int_seconds))
+                if (int_minutes > 0 and int_seconds > 0) or \
+                        (int_minutes > 0 and int_seconds == 0) or \
+                        (int_minutes == 0 and int_seconds > 0):
                     self.temp_time_interval_list.append(
                         (int_minutes, int_seconds))
                     interval = "  {} mins : {} secs".format(
@@ -1431,10 +1353,8 @@ class MainWindow:
             self.intervals_box.delete(item)
             self.intervals_box.insert(item-1, interval)
             # del and insert in list
-            # self.time_interval_list.insert(
             self.temp_time_interval_list.insert(
                 item-1, self.time_interval_list[item])
-            # del(self.time_interval_list[item+1])
             del(self.temp_time_interval_list[item+1])
 
             self.intervals_box.activate(item-1)
@@ -1450,10 +1370,8 @@ class MainWindow:
             self.intervals_box.delete(item)
             self.intervals_box.insert(item+1, interval)
             # del and insert in list
-            # self.time_interval_list.insert(
             self.temp_time_interval_list.insert(
                 item, self.time_interval_list[item+1])
-            # del(self.time_interval_list[item+2])
             del(self.temp_time_interval_list[item+2])
 
             self.intervals_box.activate(item+1)
@@ -1602,11 +1520,11 @@ class MainWindow:
             # reset current interval too in case timer had been paused
             self.current_interval = self.time_secs_interval_list[self.current_interval_index]
 
-    def next_interval(self):
-        mainWindow.event_generate('<Key>', keysym='s', when='tail')
-
-    def prev_interval(self):
-        mainWindow.event_generate('<Key>', keysym='a', when='tail')
+    # def next_interval(self):
+    #     mainWindow.event_generate('<Key>', keysym='s', when='tail')
+    #
+    # def prev_interval(self):
+    #     mainWindow.event_generate('<Key>', keysym='a', when='tail')
 
     def save_session(self):
         try:
@@ -1632,11 +1550,9 @@ class MainWindow:
             # list of folders for Edit Session
             self.session_state_list.append(self.edit_session_path_list)
             self.session_state_list.append(self.image_index)
-            print()
-            # print(type(self.session_state_list))
+
             for item in self.session_state_list:
                 print(type(item))
-            # print("len - ", len(self.session_state_list))
             try:
                 with open(file, 'wb') as pickle_file:
                     pickle.dump(self.session_state_list, pickle_file)
@@ -1658,8 +1574,7 @@ class MainWindow:
 
                 self.new_folders_list = self.session_state_list[0].copy()
                 self.filenames_list = self.session_state_list[1].copy()
-                self.temp_new_filenames_list = self.session_state_list[2].copy(
-                )
+                self.temp_new_filenames_list = self.session_state_list[2].copy()
                 self.total_images = self.session_state_list[3]
                 self.new_session_image_counter = self.session_state_list[4]
                 self.time_interval_list = self.session_state_list[5].copy()
@@ -1668,18 +1583,15 @@ class MainWindow:
                 self.incl_subdirs_var.set(self.session_state_list[8])
                 self.edit_session_path_list = self.session_state_list[9].copy()
                 self.image_index = self.session_state_list[10]
-                # print()
-                # # print(type(self.session_state_list))
-                # for item in self.session_state_list:
-                #     print(type(item))
-                self.temp_time_interval_list = self.session_state_list[5].copy(
-                )
+
+                self.temp_time_interval_list = self.session_state_list[5].copy()
 
                 self.session_state_list.clear()
 
                 self.session_loaded = True
                 self.start_session()
                 self.session_loaded = False
+
             except FileNotFoundError:
                 print("File not found")
             else:
@@ -1693,7 +1605,7 @@ class MainWindow:
 
     def zoom_in(self, event=None):
         if self.image_exists:
-            if (self.zoom_index < 7):
+            if self.zoom_index < 7:
                 self.zoom_index += 1
                 factor = self.zoom_factor[self.zoom_index]
                 self.resize_image(int(self.original_image_width * factor),
@@ -1857,7 +1769,6 @@ class MainWindow:
         zeros[:, :, 0] = self.cv2_image[:, :, 0] * d
         zeros[:, :, 1] = self.cv2_image[:, :, 1] * d
         zeros[:, :, 2] = self.cv2_image[:, :, 2] * d
-        # e = self.cv2_image * d
 
         self.cv2_image = zeros
 
@@ -1980,7 +1891,6 @@ class MainWindow:
 
     def lock_aspect(self):
         # if there's no image loaded
-        # if not [item for item in self.canvas.find_all()]:
         if not self.image_exists:
             if self.aspect_locked.get() == 1:
                 mainWindow.resizable(False, False)
@@ -2022,7 +1932,7 @@ class MainWindow:
 
     def win_fit_width(self):
         self.win_location()
-        if (self.image_width < self.screen_width):
+        if self.image_width < self.screen_width:
             mainWindow.geometry(
                 "{}x{}+{}+{}".format(self.image_width + self.SBW, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
         else:
@@ -2061,7 +1971,6 @@ class MainWindow:
         self.b1_released = True
         self.prev_px = None
         self.prev_py = None
-        # print("\t\t\t\t\t\tB1 released - prev_px =", self.prev_px)
 
     def drag_image(self, event=None):
 
@@ -2079,8 +1988,6 @@ class MainWindow:
                 # left side of scrollbar
                 self.new_posx = self.horz_scrollbar.get()[0]
                 self.new_posy = self.vert_scrollbar.get()[0]
-                # print("Scroll initial pos X:", self.new_posx)
-                # print("Scroll initial pos Y:", self.new_posy)
                 self.now_px = event.x
                 self.now_py = event.y
                 self.initial_scroll_posx = False
@@ -2091,7 +1998,6 @@ class MainWindow:
                 self.prev_px = event.x
                 self.prev_py = event.y
                 self.b1_released = False
-                # print("-" * 50, "First time in loop")
 
             elif self.b1_released == False and (self.prev_px is not None) and (self.prev_py is not None):
                 self.now_px = event.x
@@ -2108,19 +2014,18 @@ class MainWindow:
                     1 / self.image_width) * abs(self.diffx)
                 self.img_pxy_percent = (
                     1 / self.image_height) * abs(self.diffy)
-                # print("img px % {:.5f}".format(self.img_pxx_percent))
 
                 # move right or left and reach limits
                 if self.diffx > 0 and self.horz_scrollbar.get()[1] <= 1:
                     self.new_posx = self.new_posx - self.img_pxx_percent
                     # print("Right ->")
-                elif self.diffx < 0 and self.horz_scrollbar.get()[0] >= 0:
+                elif self.diffx < 0 <= self.horz_scrollbar.get()[0]:
                     self.new_posx = self.new_posx + self.img_pxx_percent
                     # print("<- Left")
 
                 if self.diffy > 0 and self.vert_scrollbar.get()[1] <= 1:
                     self.new_posy = self.new_posy - self.img_pxy_percent
-                elif self.diffy < 0 and self.vert_scrollbar.get()[0] >= 0:
+                elif self.diffy < 0 <= self.vert_scrollbar.get()[0]:
                     self.new_posy = self.new_posy + self.img_pxy_percent
 
                 # print("new pos X:", self.new_posx)
@@ -2144,8 +2049,6 @@ class MainWindow:
                     event.widget.xview_moveto(self.new_posx)
                 elif self.image_width < self.canvas.winfo_width() and self.image_height > self.canvas.winfo_height():
                     event.widget.yview_moveto(self.new_posy)
-            # self.refresh_image()
-            # print("now_pos: {:.5f}".format(self.now_pos))
 
     def refresh_image(self, event=None):
         self.canvas.pack_forget()
@@ -2166,7 +2069,6 @@ class MainWindow:
         self.canvas.pack(fill=tkinter.BOTH, expand=True)
 
         # delete any previous items on canvas before refreshing
-        # self.canvas.delete('all')
         self.canvas.delete('image', 'dummy')
 
         # creates a dummy rectangle roughly the same size as the canvas that
@@ -2196,21 +2098,6 @@ class MainWindow:
             self.tk_image.image = self.tk_image
 
         self.initial_scroll_pos = True
-
-        # print("Win width:", mainWindow.winfo_width(),
-        #       "Img width:", self.image_width)
-        # print("Win height:", mainWindow.winfo_height(),
-        #       "Img height:", self.image_height)
-        # print("x:", self.x_offset, "y:", self.y_offset)
-        # print()
-
-        # Check MEMORY Usage
-        # pid = os.getpid()
-        # print(pid)
-        # ps = psutil.Process(pid)
-        # memory_use = ps.memory_info()
-        # print(memory_use)
-        # print()
 
     def image_dimensions(self, image, imgtype):
         if self.image_exists:
@@ -2276,4 +2163,3 @@ if __name__ == "__main__":
     app = MainWindow(mainWindow)
     # load program window
     mainWindow.mainloop()
-    # app.exit_threads.set()
