@@ -1010,7 +1010,6 @@ class MainWindow:
         self.edit_session_clicked = False
         print()
 
-
     def start_session(self):
         """ Only runs when Start button is clicked or a session is loaded """
 
@@ -1232,7 +1231,7 @@ class MainWindow:
             self.start_button.config(state='disabled')
             self.edit_start_button.config(state='disabled')
 
-    def recurs_removal(self, list1, item):
+    def recurs_removal(self, list1: list, item: str) -> int:
         """ Recursively removes paths from the temporary list in Session mode """
         for elem in reversed(list1):
             if type(elem) == str:
@@ -1246,8 +1245,7 @@ class MainWindow:
 
         return 0
 
-
-    def recurs_folder_scan(self, pathlist):
+    def recurs_folder_scan(self, pathlist: list) -> list:
         """ Recursive function that returns sub-folder structure in list form """
         recurs_list = []
         for item in range(len(pathlist)):
@@ -1266,7 +1264,7 @@ class MainWindow:
 
         return recurs_list
 
-    def populate_dir_box(self, folderlist):
+    def populate_dir_box(self, folderlist: list):
         """ The directories box is populated in the Session window """
         for item in folderlist:
             if type(item) == str:
@@ -1281,7 +1279,7 @@ class MainWindow:
                 self.populate_dir_box(item)
                 self.tabs -= 4
 
-    def _print_path_list(self, tlist):
+    def _print_path_list(self, tlist: list):
         """
         Prints folder structure in tabbed form according to hierarchy.
         Used for debugging.
@@ -1300,7 +1298,7 @@ class MainWindow:
         self.new_session_info_msg.set(
             "{} folders and {} images are queued".format(folders, images))
 
-    def contains_images(self, path):
+    def contains_images(self, path: str) -> bool:
         """ Returns True or False if images contained in folder"""
         counter = 0
         for file_name in os.listdir(path):
@@ -1313,7 +1311,7 @@ class MainWindow:
         else:
             return True
 
-    def recount_images(self, path):
+    def recount_images(self, path: str) -> int:
         """ Returns a count of the images in the folder """
         counter = 0
         for file_name in os.listdir(path):
@@ -1324,7 +1322,7 @@ class MainWindow:
                     counter += 1
         return counter
 
-    def scan_images(self, path):
+    def scan_images(self, path: str):
         """ Scan images into temporary master list """
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
@@ -1573,12 +1571,6 @@ class MainWindow:
 
             # reset current interval too in case timer had been paused
             self.current_interval = self.time_secs_interval_list[self.current_interval_index]
-
-    # def next_interval(self):
-    #     mainWindow.event_generate('<Key>', keysym='s', when='tail')
-    #
-    # def prev_interval(self):
-    #     mainWindow.event_generate('<Key>', keysym='a', when='tail')
 
     def save_session(self):
         """
