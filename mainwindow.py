@@ -228,9 +228,8 @@ class MainWindow:
                 7: "Darken the image",
                 8: "Apply Levels - Brighten the image",
                 9: "Apply Levels - Darken the image",
-                10: "Apply a Median filter to the image",
-                11: None,
-                12: "Randomize the order of the images"
+                10: None,
+                11: "Randomize the order of the images"
             },
             3: {
                 0: "Pause or Continue the timer",
@@ -338,7 +337,6 @@ class MainWindow:
             label="Levels - Brighten", command=self.levels_brighten, accelerator='G')
         self.image_menu.add_command(
             label="Levels - Darken", command=self.levels_darken, accelerator='F')
-        self.image_menu.add_command(label="Median", command=self.median)
         self.image_menu.add_separator()
         self.image_menu.add_checkbutton(
             label="Random Order of Images", variable=self.random_on, command=self.randomizer)
@@ -400,10 +398,11 @@ class MainWindow:
         self.zoom_bar.pack(side='right', fill='x')
 
     def menubar_selected(self, event=None):
-        # update the menubar item attribute for use in status bar function
+        """ Update the menubar item attribute for use in status bar function """
         self.menubar_sel = mainWindow.call(event.widget, 'index', 'active')
 
     def status_update(self, event=None):
+        """ Updates the status bar at the bottom left of the window """
         self.submenu_sel = mainWindow.call(event.widget, 'index', 'active')
         if isinstance(self.menubar_sel, int) and isinstance(self.submenu_sel, int):
 
@@ -417,15 +416,20 @@ class MainWindow:
             self.status_text.set("")
 
     def load_image(self):
+        """ Gets called from the File menu option Load Image"""
         self.load_image_var.set(1)
         self.load()
 
     def load_dir(self):
+        """ Gets called from the File menu option Load Directory"""
         self.load_dir_var.set(1)
         self.load()
 
     def load(self, event=None):
-
+        """
+        Used every time that an image is going to load on screen.
+        It differentiates between the different modes available.
+        """
         # poll window location before refreshing
         self.win_location()
 
@@ -695,6 +699,11 @@ class MainWindow:
                     self.image_index+1, self.total_images))
 
     def reset_from_session_mode(self):
+        """
+        When switching from a session to regular image or directory mode,
+        this function resets the necessary attributes and disables session
+        menus.
+        """
         self.new_session_started = False
         self.exited_load_imgdir = True
         self.timer_paused = True
@@ -707,6 +716,10 @@ class MainWindow:
         self.menubar.entryconfig("Timed Session", state='disabled')
 
     def set_path(self):
+        """
+        Splits the full image path into a parent folder path and
+        an image name with extension.
+        """
         self.image_path.set(self.filenames_list[self.image_index])
         path = os.path.split(os.path.abspath(
             self.filenames_list[self.image_index]))
@@ -716,6 +729,7 @@ class MainWindow:
             self.image_width, self.image_height))
 
     def restore_menu_items(self):
+        """ Restores menu items, used by load() """
         self.menubar.entryconfig("View", state='normal')
         self.menubar.entryconfig("Image", state='normal')
         self.lock_aspect()
@@ -726,7 +740,11 @@ class MainWindow:
         self.window_menu.entryconfig(13, state='normal')
 
     def new_session(self):
-
+        """
+        Creates the New Session window which also doubles as an
+        Edit Session window by reconfiguring the title and a button
+        through edit_session().
+        """
         self.new_session_win_exists = True
 
         if not self.edit_session_clicked:
@@ -942,6 +960,11 @@ class MainWindow:
         self.start_clicked = False
 
     def canceled(self):
+        """
+        Temporary lists are cleared so they won't get added later after
+        the New Session or the Edit Session windows are reopened;
+        gets activated by clickling the X button on those windows
+        """
         # clears the temporary folders that were added
         self.temp_edit_session_path_list.clear()
         # clears temp folders that were removed
@@ -951,8 +974,10 @@ class MainWindow:
         self.new_session_win.destroy()
 
     def edit_session(self):
-        # same as new session with current directories pre-loaded
-        # makes sure Edit Start version of button appears inside new_session()
+        """
+        same as new session with current directories pre-loaded
+        makes sure Edit Start version of button appears inside new_session()
+        """
         self.edit_session_clicked = True
         self.new_session()
 
@@ -985,9 +1010,9 @@ class MainWindow:
         self.edit_session_clicked = False
         print()
 
-    """ only runs when Start clicked or session is loaded """
 
     def start_session(self):
+        """ Only runs when Start button is clicked or a session is loaded """
 
         self.file_menu.entryconfig("Edit Session", state='normal')
         self.file_menu.entryconfig("Save Session", state='normal')
@@ -1064,10 +1089,12 @@ class MainWindow:
         self.timer_canvas.coords('timer_bar', 0, 0, 0, 12)
 
     def edit_start(self):
+        """ Runs when the Start button is clicked in the Edit Session window """
         self.edit_start_button_clicked = True
         self.start_session()
 
     def edited_folders(self):
+        """ Adds or removes folders from their temporary lists """
         # add each new folder from temp list to regular list
         for item in self.temp_edit_session_path_list:
             self.edit_session_path_list.append(item)
@@ -1080,6 +1107,7 @@ class MainWindow:
         self.edit_start_button_clicked = False
 
     def hide_show_timer_bar(self):
+        """ Timer bar is shown or hidden; the timer still runs in the background """
         if self.timer_bar_hidden:
             self.timer_bar_frame.pack(side='bottom')
             self.timer_bar_hidden = False
@@ -1088,6 +1116,7 @@ class MainWindow:
             self.timer_bar_hidden = True
 
     def add_dir(self):
+        """ Used to add directories in the Session windows """
         if self.incl_subdirs_var.get() == 1:
 
             try:
@@ -1169,6 +1198,8 @@ class MainWindow:
             self.edit_start_button.config(state='normal')
 
     def remove_dir(self):
+        """ Removes directories from the Session windows"""
+
         items = self.dir_box.curselection()
 
         for item in reversed(items):
@@ -1201,12 +1232,8 @@ class MainWindow:
             self.start_button.config(state='disabled')
             self.edit_start_button.config(state='disabled')
 
-    """ 
-    'item' can be an int or a str
-    """
-
     def recurs_removal(self, list1, item):
-
+        """ Recursively removes paths from the temporary list in Session mode """
         for elem in reversed(list1):
             if type(elem) == str:
                 if elem == item:
@@ -1219,8 +1246,9 @@ class MainWindow:
 
         return 0
 
-    # recursive function to return sub-folder structure in list form
+
     def recurs_folder_scan(self, pathlist):
+        """ Recursive function that returns sub-folder structure in list form """
         recurs_list = []
         for item in range(len(pathlist)):
 
@@ -1239,6 +1267,7 @@ class MainWindow:
         return recurs_list
 
     def populate_dir_box(self, folderlist):
+        """ The directories box is populated in the Session window """
         for item in folderlist:
             if type(item) == str:
 
@@ -1252,8 +1281,11 @@ class MainWindow:
                 self.populate_dir_box(item)
                 self.tabs -= 4
 
-    # prints folder structure in tabbed form according to hierarchy
     def _print_path_list(self, tlist):
+        """
+        Prints folder structure in tabbed form according to hierarchy.
+        Used for debugging.
+        """
         for item in tlist:
 
             if type(item) == str:
@@ -1264,11 +1296,12 @@ class MainWindow:
                 self.tabs -= 1
 
     def new_session_info(self, folders=0, images=0):
+        """ Updates the message at the bottom of the Session window """
         self.new_session_info_msg.set(
             "{} folders and {} images are queued".format(folders, images))
 
-    # returns True or False if images contained in folder
     def contains_images(self, path):
+        """ Returns True or False if images contained in folder"""
         counter = 0
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
@@ -1280,8 +1313,8 @@ class MainWindow:
         else:
             return True
 
-    # returns a COUNT of the images in the folder
     def recount_images(self, path):
+        """ Returns a count of the images in the folder """
         counter = 0
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
@@ -1289,11 +1322,10 @@ class MainWindow:
                 if file_name[-4:] in string:
                     self.temp_image_counter += 1
                     counter += 1
-
         return counter
 
-    # scan images into temp master list
     def scan_images(self, path):
+        """ Scan images into temporary master list """
         for file_name in os.listdir(path):
             full_path = os.path.join(path, file_name)
             for string in self.file_types_list:
@@ -1301,6 +1333,10 @@ class MainWindow:
                     self.temp_new_filenames_list.append(full_path)
 
     def add_timed_interval(self):
+        """
+        Adds an interval from the values in the Spinboxes and
+        populates the intervals box.
+        """
         # validate entries
         minutes = self.minutes_box.get()
         seconds = self.seconds_box.get()
@@ -1345,6 +1381,8 @@ class MainWindow:
                 self.reset_spinboxes()
 
     def move_interval_up(self):
+        """ Shifts the selected interval(s) up """
+
         items = self.intervals_box.curselection()
 
         for item in reversed(items):
@@ -1364,6 +1402,8 @@ class MainWindow:
             self.intervals_box.select_set(item-1)
 
     def move_interval_down(self):
+        """ Shifts the selected interval(s) down """
+
         items = self.intervals_box.curselection()
         for item in reversed(items):
             if item == self.intervals_box.size()-1:
@@ -1381,11 +1421,11 @@ class MainWindow:
             self.intervals_box.select_set(item+1)
 
     def remove_interval(self):
+        """ Removes the interval from the intervals box """
         items = self.intervals_box.curselection()
 
         for item in reversed(items):
             self.intervals_box.delete(item)
-            # del(self.time_interval_list[item])
             del(self.temp_time_interval_list[item])
 
         # if not self.time_interval_list:
@@ -1397,12 +1437,14 @@ class MainWindow:
             self.start_button.config(state='disabled')
 
     def reset_spinboxes(self):
+        """ Sets the intervals Spinboxes back to 0 """
         self.minutes_box.delete(0, 'end')
         self.minutes_box.insert('end', 0)
         self.seconds_box.delete(0, 'end')
         self.seconds_box.insert('end', 0)
 
     def interval_in_seconds(self):
+        """ Converts the interval tuples from Min Sec to all Secs """
         temp_list = []
         for item in self.time_interval_list:
             total_secs = item[0] * 60 + item[1]
@@ -1413,6 +1455,7 @@ class MainWindow:
         self.time_secs_interval_list = temp_list.copy()
 
     def interval_in_mins_secs(self):
+        """ Converts from all secs to Min : Secs"""
 
         if self.time_interval_list[self.current_interval_index][0] == 0:
             secs_interval = self.time_interval_list[self.current_interval_index][1]
@@ -1429,6 +1472,7 @@ class MainWindow:
                 mins_interval, secs_interval))
 
     def which_key(self, event):
+        """ Handles key presses """
         # print("Which key: ", event.keysym)
 
         if self.image_exists:
@@ -1492,7 +1536,13 @@ class MainWindow:
                 self.levels_darken()
 
     def run_timer(self):
-
+        """
+        Runs a timer, uses .after() to call this function again after a
+        certain amount of milliseconds. The ms are dynamically sized to the
+        specific interval to ensure a smooth progress bar progression
+        without expending excess processing power in case the interval is
+        large.
+        """
         if not self.timer_paused:
 
             self.time_diff = time.time() - self.time_start
@@ -1514,6 +1564,7 @@ class MainWindow:
             self.canvas.after(int(n), self.run_timer)
 
     def reset_timer(self):
+        """ Resets the timer after the interval is complete. """
         if self.timer_bar_frame_exists:
             self.time_start = time.time()
             self.time_diff = 0.0
@@ -1530,6 +1581,10 @@ class MainWindow:
     #     mainWindow.event_generate('<Key>', keysym='a', when='tail')
 
     def save_session(self):
+        """
+        Saves the necessary info to load a session at a later time.
+        Uses Pickle to store the info into a .viewy file.
+        """
         try:
             file = tkinter.filedialog.asksaveasfilename(
                 title='Save Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
@@ -1565,6 +1620,10 @@ class MainWindow:
             print("\t>>> Saved session!")
 
     def load_session(self):
+        """
+        Loads a saved .viewy file then uses Pickle to extract the necessary
+        info to continue a saved session.
+        """
         try:
             file = tkinter.filedialog.askopenfilename(
                 title='Load Viewy session', defaultextension=".viewy", filetypes=[("viewy files", "*.viewy")])
@@ -1603,12 +1662,17 @@ class MainWindow:
                 print("\t>>> Load successful !")
 
     def zoom(self, event):
+        """
+        Reads the mouse scroll-wheel direction and directs to the program
+        to flow to the proper function.
+        """
         if event.delta > 0:
             self.zoom_in()
         else:
             self.zoom_out()
 
-    def zoom_in(self, event=None):
+    def zoom_in(self):
+        """ Directs a resizing of the image to simulate a zooming-in. """
         if self.image_exists:
             if self.zoom_index < 7:
                 self.zoom_index += 1
@@ -1618,7 +1682,8 @@ class MainWindow:
                 self.zoom_value += 25
                 self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
 
-    def zoom_out(self, event=None):
+    def zoom_out(self):
+        """ Directs a resizing of the image to simulate a zooming-out. """
         if self.zoom_index > 0:
             self.zoom_index -= 1
             factor = self.zoom_factor[self.zoom_index]
@@ -1628,37 +1693,51 @@ class MainWindow:
             self.zoom_text.set("Zoom: {:.0f}%".format(self.zoom_value))
 
     def zoom_to_width(self):
+        """
+        Directs load() to zoom the image to match the width of the window.
+        """
         self.zoom_height_var.set(0)
         self.zoom_auto_var.set(0)
         self.load()
 
     def zoom_to_height(self):
+        """
+        Directs load() to zoom the image to the match the height of the window.
+        """
         self.zoom_width_var.set(0)
         self.zoom_auto_var.set(0)
         self.load()
 
     def zoom_auto(self):
+        """
+        Directs load() to automatically zoom each image taking into account the window
+        and image height and width.
+        """
         self.zoom_width_var.set(0)
         self.zoom_height_var.set(0)
         self.load()
 
     def zoom_reset(self):
+        """ Resets the image to original size. """
         self.resize_image(self.original_image_width,
                           self.original_image_height)
 
     def flip_vert(self):
+        """ Flips the image vertically. """
         self.cv2_image = cv2.flip(self.cv2_image, 0)
         self.pil_image = PIL.Image.fromarray(self.cv2_image)
         self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
         self.refresh_image()
 
     def flip_horz(self):
+        """ Flips the image horizontally. """
         self.cv2_image = cv2.flip(self.cv2_image, 1)
         self.pil_image = PIL.Image.fromarray(self.cv2_image)
         self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
         self.refresh_image()
 
     def rotate_left(self):
+        """ Rotates the image 90 degrees counterclockwise. """
         self.cv2_image = cv2.rotate(
             self.cv2_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
         self.pil_image = PIL.Image.fromarray(self.cv2_image)
@@ -1666,6 +1745,7 @@ class MainWindow:
         self.refresh_image()
 
     def rotate_right(self):
+        """ Rotates the image 90 degrees clockwise. """
         self.cv2_image = cv2.rotate(
             self.cv2_image, cv2.ROTATE_90_CLOCKWISE)
         self.pil_image = PIL.Image.fromarray(self.cv2_image)
@@ -1673,6 +1753,7 @@ class MainWindow:
         self.refresh_image()
 
     def rotate_amount(self):
+        """ Work in progress. Rotates image by custom degrees. """
         # TODO it rotates but corners are cut off
         # image_center = tuple(numpy.array(self.cv2_image.shape[1::-1]) / 2)
         # rotate_matrix = cv2.getRotationMatrix2D(image_center, -90, 1.0)
@@ -1681,6 +1762,12 @@ class MainWindow:
         pass
 
     def image_info(self):
+        """
+        Creates a window which shows info about the image.
+        It shows the image name with extension, the image folder path,
+        and the image size. The Open Folder button opens the Windows Explorer
+        and selects the current image file.
+        """
         self.win_location()
         popup = tkinter.Toplevel()
         popup.title('Image Info')
@@ -1724,6 +1811,7 @@ class MainWindow:
         size_box.grid(row=4, column=3, sticky='w')
 
     def open_folder(self):
+        """ Opens the current file's folder in Windows Explorer and selects the file. """
         # opens just the folder in Win 10
         # folder_path = os.path.split(os.path.abspath(self.image_path.get()))
         # os.startfile(folder_path[0])
@@ -1736,12 +1824,24 @@ class MainWindow:
             'explorer /select,{}'.format(self.image_path.get().replace('/', '\\')))
 
     def next_image_func(self):
+        """
+        Generates an event that simulates the Right cursor key being pressed.
+        Used for skipping to the next image.
+        """
         self.canvas.event_generate('<Key>', keysym='Right', when='tail')
 
     def prev_image_func(self):
+        """
+        Generates an event that simulates the Left cursor key being pressed.
+        Used for going back to the previous image.
+        """
         self.canvas.event_generate('<Key>', keysym='Left', when='tail')
 
     def search_google(self):
+        """
+        Opens a browser and performs a Google image search for the
+        current image.
+        """
         filePath = "{}".format(self.filenames_list[self.image_index])
         print(filePath)
         searchUrl = 'http://www.google.com/searchbyimage/upload'
@@ -1753,6 +1853,7 @@ class MainWindow:
         webbrowser.open(fetchUrl)
 
     def resize_image(self, x=200, y=200):
+        """ Resizes the image to the passed parameters. Used in zoom, etc. """
         # use earlier pil_image to resize then reconvert and display
         self.tk_image = self.pil_image.resize((x, y), PIL.Image.ANTIALIAS)
         # convert to PhotoImage format again
@@ -1762,7 +1863,8 @@ class MainWindow:
         self.refresh_image()
 
     def vignette(self):
-        print("Vignette")
+        """ Creates a darkened aura in the image to give the center focus. """
+
         zeros = numpy.copy(self.cv2_image)
         zeros[:, :, :] = 0
 
@@ -1782,6 +1884,7 @@ class MainWindow:
         self.refresh_image()
 
     def brighten(self, value=10):
+        """ Brightens the image overall by a small factor. """
         bright_value = numpy.array([value, value, value], dtype=numpy.float32)
         self.cv2_image = numpy.clip(self.cv2_image + bright_value,
                                     0, 255).astype(numpy.uint8)
@@ -1790,6 +1893,7 @@ class MainWindow:
         self.refresh_image()
 
     def darken(self, value=10):
+        """ Darkens the brightness of the image by a small factor. """
         dark_value = numpy.array([value, value, value], dtype=numpy.float32)
         self.cv2_image = numpy.clip(self.cv2_image - dark_value,
                                     0, 255).astype(numpy.uint8)
@@ -1798,6 +1902,7 @@ class MainWindow:
         self.refresh_image()
 
     def levels_brighten(self, inblack=0, inwhite=229.5, gamma=1.0, outblack=0, outwhite=255):
+        """ Brightens the colour levels of the image. """
         black_input = numpy.array(
             [inblack, inblack, inblack], dtype=numpy.float32)
         white_input = numpy.array(
@@ -1820,6 +1925,7 @@ class MainWindow:
         print("Levels - brighten")
 
     def levels_darken(self, inblack=25.5, inwhite=255, gamma=1.0, outblack=0, outwhite=255):
+        """ Darkens the colour levels of the image. """
         black_input = numpy.array(
             [inblack, inblack, inblack], dtype=numpy.float32)
         white_input = numpy.array(
@@ -1841,11 +1947,8 @@ class MainWindow:
         self.refresh_image()
         print("Levels - darken")
 
-    def median(self):
-        pass
-
-    # disable randomizer until image is loaded
     def randomizer(self):
+        """ Shuffles the order of the images. """
         if self.random_on.get() == 1:
             # if random is ON then make a copy of the original order
             # so that it can be reverted when turned off
@@ -1856,23 +1959,38 @@ class MainWindow:
             self.filenames_list = self.filenames_list_backup.copy()
 
     def pause(self):
+        """
+        Generates event that simulates pressing the Spacebar
+        to pause the timer.
+        """
         self.canvas.event_generate('<Key>', keysym='space', when='tail')
 
     def next_interval(self):
+        """
+        Generates event to simulate pressing the S key to switch
+        to the next time interval.
+        """
         self.canvas.event_generate('<Key>', keysym='s', when='tail')
 
     def prev_interval(self):
+        """
+        Generates event to simulate pressing the A key to switch
+        to the previous time interval.
+        """
         self.canvas.event_generate('<Key>', keysym='a', when='tail')
 
     @ staticmethod
     def min_window():
+        """ Minimizes the window. """
         mainWindow.wm_state('icon')
 
     @ staticmethod
     def restore_window():
+        """ Restores the window from minimized or maximized state. """
         mainWindow.wm_state('normal')
 
     def fit_screen_width(self):
+        """ Resize the window to fit the width of the screen. """
         self.win_location()  # poll location coords
         self.win_x_offset = 1922
         # -8 pixels to fit perfectly on screen
@@ -1881,6 +1999,7 @@ class MainWindow:
                                                  mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
 
     def fit_screen_height(self):
+        """ Resizes the window to fit the height of the screen."""
         self.win_location()
         self.win_y_offset = 0
         # -51 pixels to fit bottom perfectly on screen
@@ -1892,9 +2011,11 @@ class MainWindow:
 
     @ staticmethod
     def max_window():
+        """ Maximizes the window. """
         mainWindow.wm_state('zoomed')
 
     def lock_aspect(self):
+        """ Prevent the image from being accidentally resized. """
         # if there's no image loaded
         if not self.image_exists:
             if self.aspect_locked.get() == 1:
@@ -1936,6 +2057,7 @@ class MainWindow:
                 self.window_menu.entryconfig(10, state='normal')
 
     def win_fit_width(self):
+        """ Resizes the window to the width of the image. """
         self.win_location()
         if self.image_width < self.screen_width:
             mainWindow.geometry(
@@ -1945,6 +2067,7 @@ class MainWindow:
                 "{}x{}+{}+{}".format(self.screen_width, mainWindow.winfo_height(), self.win_x_offset, self.win_y_offset))
 
     def win_fit_height(self):
+        """ Resizes the window to the height of the image. """
         self.win_location()
         if self.image_height < self.screen_height:
             mainWindow.geometry(
@@ -1954,6 +2077,7 @@ class MainWindow:
                 "{}x{}+{}+{}".format(mainWindow.winfo_width(), self.screen_height, self.win_x_offset, self.win_y_offset))
 
     def win_fit_size(self):
+        """ Resizes the window to fit the width and height of the image. """
         self.win_location()
 
         # restore window before applying changes
@@ -1973,12 +2097,13 @@ class MainWindow:
             mainWindow.state('zoomed')  # maximize window
 
     def b1_release(self, event):
+        """ Used when the left mouse button is released. """
         self.b1_released = True
         self.prev_px = None
         self.prev_py = None
 
     def drag_image(self, event=None):
-
+        """ Code that handles the movement of the image when click-dragging. """
         if self.image_exists and not (
             (self.image_width <= self.canvas.winfo_width()
              and self.image_height <= self.canvas.winfo_height())
@@ -2056,6 +2181,7 @@ class MainWindow:
                     event.widget.yview_moveto(self.new_posy)
 
     def refresh_image(self, event=None):
+        """ Reloads the image. Used by various functions. Centers the image. """
         self.canvas.pack_forget()
 
         if self.image_width > self.canvas.winfo_width() and self.image_height > self.canvas.winfo_height():
@@ -2105,6 +2231,7 @@ class MainWindow:
         self.initial_scroll_pos = True
 
     def image_dimensions(self, image, imgtype):
+        """ Reads the current image's dimensions. """
         if self.image_exists:
             if imgtype == 'tk_image':
                 self.image_width = image.width()
@@ -2114,9 +2241,11 @@ class MainWindow:
                 self.image_height = image.height
 
     def help(self):
+        """ Provides description of features. """
         pass
 
     def about(self):
+        """ Creates a window with info about the author and program. """
         self.win_location()
         about_window = tkinter.Toplevel()
         about_window.title("About Viewy")
@@ -2149,12 +2278,14 @@ class MainWindow:
         close.grid(row=5, column=1, sticky='s')
 
     def win_dimensions(self):
+        """ Reads the current window dimensions. Used by various functions. """
         self.win_width = mainWindow.winfo_width()
         self.win_height = mainWindow.winfo_height()
         self.canvas_width = self.canvas.winfo_width()
         self.canvas_height = self.canvas.winfo_height()
 
     def win_location(self):
+        """ Reads the current window location. Used by various functions. """
         self.screen_width, self.screen_height = mainWindow.winfo_screenwidth(
         ), mainWindow.winfo_screenheight()
         self.win_x_offset, self.win_y_offset = mainWindow.winfo_rootx() - \
