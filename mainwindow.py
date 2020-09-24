@@ -2234,7 +2234,7 @@ class MainWindow:
 
     def help(self):
         """ Provides description of features. """
-        pass
+        webbrowser.open("help.html")
 
     def about(self):
         """ Creates a window with info about the author and program. """
