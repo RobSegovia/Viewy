@@ -100,6 +100,9 @@ class MainWindow:
         self.b1_released = True
 
         self.new_session_win_exists = False
+        self.progress_goal = 0
+        self.total_progress = 0
+        self.done_loading = False
         self.session_loaded = False
         self.temp_list = []
         self.tabs = 0
@@ -953,9 +956,10 @@ class MainWindow:
 
         self.new_session_info_msg.set(
             "Folders without images will be filtered out")
-        bottom_frame = tkinter.Label(
+        self.bottom_frame = tkinter.Label(
             self.new_session_win, textvariable=self.new_session_info_msg)
-        bottom_frame.grid(row=2, column=0, sticky='we', pady=10, columnspan=2)
+        self.bottom_frame.grid(
+            row=2, column=0, sticky='we', pady=10, columnspan=2)
 
         self.start_clicked = False
 
@@ -1075,10 +1079,10 @@ class MainWindow:
             self.timer_bar_frame_exists = True
 
             self.timer_bar_frame = tkinter.Frame(
-                self.canvas, height=12, width=250)
+                self.canvas, height=self.TIMER_BAR_HEIGHT, width=250)
             self.timer_bar_frame.pack(side='bottom')
             self.timer_canvas = tkinter.Canvas(
-                self.timer_bar_frame, width=250, height=12, bg='white')
+                self.timer_bar_frame, width=250, height=self.TIMER_BAR_HEIGHT, bg='white')
             self.timer_canvas.pack(fill='both')
             self.timer_bar = self.timer_canvas.create_rectangle(
                 0, 0, 0, self.TIMER_BAR_HEIGHT, fill='#33ff00', tags='timer_bar')
@@ -1119,10 +1123,12 @@ class MainWindow:
         if self.incl_subdirs_var.get() == 1:
 
             try:
+                self.new_session_info_msg.set("... LOADING ...")
+
                 path = tkinter.filedialog.askdirectory(
                     title="Select a directory of images to load (Includes Sub-directories)")
-                list_subd_paths = [
-                    folder.path for folder in os.scandir(path) if folder.is_dir()]
+
+                self.done_loading = True
 
                 all_folders_list = [path]
                 empty_folder_list = []
@@ -1137,6 +1143,7 @@ class MainWindow:
                             empty_folder_list.append(item)
 
                 if all_folders_list:
+
                     # call RECURSIVE function
                     self.temp_list = self.recurs_folder_scan(all_folders_list)
 
@@ -1146,7 +1153,6 @@ class MainWindow:
                     # Populate self.dir_box with folders
                     self.populate_dir_box(self.temp_list)
 
-                    # self.edit_session_path_list[0].append(self.temp_list)
                     for item in self.temp_list:
                         self.temp_edit_session_path_list.append(item)
 
