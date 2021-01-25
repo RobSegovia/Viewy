@@ -124,6 +124,8 @@ class MainWindow:
         self.start_clicked = False
         self.edit_start_button_clicked = False
 
+        self.grid_on = False
+
         self.session_state_list = []
         self.edit_session_path_list = []
         self.temp_edit_session_path_list = []
@@ -132,7 +134,7 @@ class MainWindow:
         self.edit_session_clicked = False
 
         self.TIMER_BAR_WIDTH = 250
-        self.TIMER_BAR_HEIGHT = 12
+        self.TIMER_BAR_HEIGHT = 24
 
         self.zoom_factor = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
         self.zoom_index = 3
@@ -1538,6 +1540,8 @@ class MainWindow:
                 self.levels_brighten()
             elif event.keysym == 'f':
                 self.levels_darken()
+            elif event.keysym == 'l':
+                self.grid_toggle()
 
     def run_timer(self):
         """
@@ -1944,6 +1948,30 @@ class MainWindow:
         self.tk_image = PIL.ImageTk.PhotoImage(self.pil_image)
         self.refresh_image()
         print("Levels - darken")
+
+    # TODO: check for self.grid_on in refresh func
+    # TODO: make a popup window to edit grid size/visibility
+    def grid_toggle(self):
+        if self.grid_on:
+            self.grid_on = False
+        self.grid_on = True
+
+        self.grid() # get rid of this once checking inside refresh func
+
+    # TODO: make grid appear on image itself when it refreshes
+    def grid(self):
+        """ Creates a grid that overlays image. """
+
+        self.win_dimensions()
+
+        grid_div = 10
+        grid_width = 2
+
+        divx = self.win_width / grid_div
+        divy = self.win_height / grid_div
+        for n in range(grid_div):
+            self.canvas.create_line(divx * n, 0, divx * n, self.win_height, width=grid_width)
+            self.canvas.create_line(0, divy * n, self.win_width, divy * n, width=grid_width)
 
     def randomizer(self):
         """ Shuffles the order of the images. """
